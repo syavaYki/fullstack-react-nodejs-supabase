@@ -1,0 +1,17 @@
+{
+  "name": "fullstack-react-nodejs-supabase",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Fullstack monorepo with React frontend and Node.js Express backend using Supabase",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:backend": "npm run dev --workspace=@app/backend",
+    "build:backend": "npm run build --workspace=@app/backend",
+    "start:backend": "npm run start --workspace=@app/backend"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
