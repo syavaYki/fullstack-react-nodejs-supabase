@@ -4,6 +4,8 @@ import { authService } from '../services/auth.service.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
 import { asyncHandler } from '../middleware/error.middleware.js';
 import { AuthenticatedRequest } from '../types/index.js';
+import { createSupabaseReqResClient } from '../config/supabase.js';
+import { env } from '../config/env.js';
 
 const router = Router();
 
@@ -40,6 +42,10 @@ const resetPasswordSchema = z.object({
  *     summary: Register a new user
  *     tags: [Auth]
  *     security: []
+ *     deprecated: true
+ *     description: |
+ *       **DEPRECATED**: For cookie-based auth, use the Supabase client directly in your frontend.
+ *       This endpoint is kept for API clients that need Bearer token auth.
  *     requestBody:
  *       required: true
  *       content:
@@ -84,6 +90,10 @@ router.post(
  *     summary: Login with email and password
  *     tags: [Auth]
  *     security: []
+ *     deprecated: true
+ *     description: |
+ *       **DEPRECATED**: For cookie-based auth, use the Supabase client directly in your frontend.
+ *       This endpoint is kept for API clients that need Bearer token auth.
  *     requestBody:
  *       required: true
  *       content:
@@ -122,6 +132,10 @@ router.post(
  *   post:
  *     summary: Logout and invalidate session
  *     tags: [Auth]
+ *     deprecated: true
+ *     description: |
+ *       **DEPRECATED**: For cookie-based auth, use the Supabase client directly in your frontend.
+ *       This endpoint is kept for API clients that need Bearer token auth.
  *     responses:
  *       200:
  *         description: Logged out successfully
@@ -262,6 +276,9 @@ router.post(
  *   get:
  *     summary: Get current user
  *     tags: [Auth]
+ *     description: |
+ *       Returns the current authenticated user. Works with both cookie-based auth
+ *       (browser clients) and Bearer token auth (API clients).
  *     responses:
  *       200:
  *         description: Current user data
@@ -276,6 +293,69 @@ router.get(
       success: true,
       data: { user: req.user },
     });
+  })
+);
+
+/**
+ * @swagger
+ * /api/auth/callback:
+ *   get:
+ *     summary: OAuth callback handler
+ *     tags: [Auth]
+ *     description: |
+ *       Handles OAuth callback from Supabase. This endpoint is called after a user
+ *       authenticates with an OAuth provider (Google, GitHub, etc.).
+ *
+ *       **Setup Required**: Add this URL to your Supabase project's redirect URLs:
+ *       - Development: `http://localhost:3001/api/auth/callback`
+ *       - Production: `https://your-domain.com/api/auth/callback`
+ *     parameters:
+ *       - in: query
+ *         name: code
+ *         schema:
+ *           type: string
+ *         description: Authorization code from OAuth provider
+ *       - in: query
+ *         name: next
+ *         schema:
+ *           type: string
+ *         description: URL to redirect to after authentication (default is frontend URL)
+ *     responses:
+ *       302:
+ *         description: Redirects to frontend with session cookie set
+ *       400:
+ *         description: Missing authorization code
+ */
+router.get(
+  '/callback',
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const code = req.query.code as string;
+    const next = (req.query.next as string) || env.FRONTEND_URL;
+
+    if (!code) {
+      res.status(400).json({
+        success: false,
+        error: 'Missing authorization code',
+      });
+      return;
+    }
+
+    // Create Supabase client with cookie context
+    const supabase = createSupabaseReqResClient(req, res);
+
+    // Exchange the code for a session
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+    if (error) {
+      console.error('OAuth callback error:', error);
+      // Redirect to frontend with error
+      res.redirect(`${env.FRONTEND_URL}/auth/error?message=${encodeURIComponent(error.message)}`);
+      return;
+    }
+
+    // Session cookies are automatically set by createSupabaseReqResClient
+    // Redirect to the next URL or frontend
+    res.redirect(next);
   })
 );
 

@@ -94,13 +94,17 @@ Swagger UI available at: `http://localhost:3001/api/docs`
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/register` | Register new user |
-| POST | `/login` | Login with email/password |
-| POST | `/logout` | Logout |
+| GET | `/me` | Get current user (cookie or Bearer token) |
+| GET | `/callback` | OAuth callback handler (sets session cookies) |
 | POST | `/refresh` | Refresh access token |
 | POST | `/forgot-password` | Send reset email |
 | POST | `/reset-password` | Reset password |
-| GET | `/me` | Get current user |
+| POST | `/register` | Register new user *(deprecated - use Supabase client)* |
+| POST | `/login` | Login *(deprecated - use Supabase client)* |
+| POST | `/logout` | Logout *(deprecated - use Supabase client)* |
+
+> **Cookie-Based Auth**: For browser clients, use the Supabase client directly for login/logout.
+> The backend reads cookies and auto-refreshes tokens. See [Authentication Architecture](#authentication-architecture) below.
 
 #### Profile (`/api/profile`)
 
@@ -216,7 +220,55 @@ npm run start:backend  # Start production server
 - **Framework**: Express.js
 - **Language**: TypeScript
 - **Database**: Supabase (PostgreSQL)
-- **Auth**: Supabase Auth
+- **Auth**: Supabase Auth + `@supabase/ssr` (cookie-based)
 - **Billing**: Stripe
 - **Validation**: Zod
 - **Docs**: Swagger/OpenAPI
+
+## Authentication Architecture
+
+This project uses **cookie-based authentication** with a clear separation of responsibilities:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  FRONTEND (creates/deletes cookies)                         │
+│  └─ Uses Supabase client: signIn, signUp, signOut           │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                    Cookie sent automatically
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│  BACKEND (reads/refreshes cookies)                          │
+│  └─ Uses @supabase/ssr: getUser, auto-refresh               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+| Action | Who Handles It |
+|--------|----------------|
+| Create cookie (login/signup) | Frontend via Supabase client |
+| Read cookie | Backend middleware |
+| Refresh expired tokens | Backend (auto, sets new cookie) |
+| Delete cookie (logout) | Frontend via Supabase client |
+
+### OAuth Setup
+
+For OAuth providers (Google, GitHub, etc.), add redirect URLs in Supabase Dashboard:
+
+**Supabase Dashboard > Authentication > URL Configuration > Redirect URLs:**
+
+```
+http://localhost:3000                      # Frontend (dev)
+http://localhost:3001/api/auth/callback    # Backend OAuth callback (dev)
+https://your-frontend.com                  # Frontend (prod)
+https://your-backend.com/api/auth/callback # Backend OAuth callback (prod)
+```
+
+## Common Mistakes to Avoid
+
+| Mistake | Solution |
+|---------|----------|
+| Using Service Role Key in frontend | Never expose - backend only |
+| Using `@supabase/auth-helpers` | Deprecated - use `@supabase/ssr` |
+| Missing `/auth/callback` route | Required for OAuth |
+| Not adding localhost to redirect URLs | Add in Supabase Dashboard |
+| Backend creating login cookies | Frontend creates, backend reads |

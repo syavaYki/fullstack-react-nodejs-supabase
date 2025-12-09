@@ -23,6 +23,7 @@ A comprehensive Node.js/Express backend with Supabase authentication, membership
 - [Stripe Integration](#stripe-integration)
 - [Error Handling](#error-handling)
 - [Testing](#testing)
+- [Common Mistakes to Avoid](#common-mistakes-to-avoid)
 - [Troubleshooting](#troubleshooting)
 
 ---
@@ -101,13 +102,75 @@ This backend provides a complete SaaS infrastructure including:
 
 ### Request Flow
 
-1. Client sends request with JWT in Authorization header
-2. Express receives request through CORS and JSON middleware
-3. Auth middleware validates JWT with Supabase
+1. Client sends request (with cookie or Authorization header)
+2. Express receives request through CORS, Cookie Parser, and JSON middleware
+3. Auth middleware validates JWT via cookie or header with Supabase
 4. Route-specific middleware (admin, membership, usage) applied
 5. Route handler processes request using services
 6. Services interact with Supabase DB or Stripe API
 7. Response sent back through middleware chain
+
+### Cookie-Based Authentication
+
+The backend supports **dual authentication methods**:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  FRONTEND (creates/deletes cookies via Supabase client)     │
+│  - Login/Signup → Supabase sets cookie automatically        │
+│  - OAuth (Google, GitHub) → Supabase handles redirect       │
+│  - Logout → Supabase clears cookie                          │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                    Cookie sent with requests
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│  BACKEND (reads/refreshes cookies)                          │
+│  - Reads cookie to authenticate requests                    │
+│  - Refreshes expired tokens (sends Set-Cookie in response)  │
+│  - Never creates initial cookie (frontend's job)            │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Authentication Priority
+
+1. **Cookies** (browser clients) - Uses `@supabase/ssr` for automatic token refresh
+2. **Authorization Header** (API clients) - Bearer token for programmatic access
+
+#### How It Works
+
+**Browser Clients (Cookie Auth):**
+- Frontend calls `supabase.auth.signInWithPassword()` or OAuth
+- Supabase client automatically sets HttpOnly cookies
+- Backend middleware reads cookies using `@supabase/ssr`
+- Expired tokens are automatically refreshed, new cookies set in response
+
+**API Clients (Bearer Token):**
+- Get token from Supabase auth
+- Send `Authorization: Bearer <token>` header
+- Backend validates token with Supabase Admin client
+
+#### Cookie Security
+
+| Property | Value | Description |
+|----------|-------|-------------|
+| `HttpOnly` | `true` | Prevents XSS access via JavaScript |
+| `Secure` | `true` (prod) | HTTPS only in production |
+| `SameSite` | `lax` | CSRF protection |
+
+#### OAuth Callback
+
+For OAuth providers (Google, GitHub, etc.), add the callback URL to Supabase:
+
+```
+# Development
+http://localhost:3001/api/auth/callback
+
+# Production
+https://your-domain.com/api/auth/callback
+```
+
+Configure in: **Supabase Dashboard > Authentication > URL Configuration > Redirect URLs**
 
 ---
 
@@ -1528,6 +1591,23 @@ Set these environment variables for testing:
 NODE_ENV=development
 STRIPE_SECRET_KEY=sk_test_...
 ```
+
+---
+
+## Common Mistakes to Avoid
+
+When implementing Supabase authentication, avoid these common pitfalls:
+
+| Mistake | Why It's Bad | Solution |
+|---------|--------------|----------|
+| Using Service Role Key in frontend | Bypasses all RLS - exposes your entire database | Only use in backend, never expose to client |
+| Using `@supabase/auth-helpers` | Deprecated package | Use `@supabase/ssr` instead |
+| Creating new Supabase client per request | Memory leaks, poor performance | Use singleton clients, reuse instances |
+| Missing `/auth/callback` route | OAuth will redirect to nowhere | Add callback endpoint for OAuth providers |
+| Not adding localhost to redirect URLs | OAuth fails in development | Add `http://localhost:3001/api/auth/callback` in Supabase Dashboard |
+| Backend creating login cookies | Wrong architecture | Frontend creates cookies via Supabase client, backend only reads/refreshes |
+| Forgetting cookie-parser middleware | Cookies won't be parsed | Add `app.use(cookieParser())` before routes |
+| Not setting `credentials: true` in CORS | Cookies won't be sent cross-origin | Already configured in this project |
 
 ---
 

@@ -1,4 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createServerClient, CookieOptions } from '@supabase/ssr';
+import { Request, Response } from 'express';
 import { env } from './env.js';
 
 // Client for user-context operations (uses anon key, respects RLS)
@@ -25,6 +27,40 @@ export function createSupabaseClientWithAuth(accessToken: string): SupabaseClien
     global: {
       headers: {
         Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  });
+}
+
+/**
+ * Create a Supabase client with cookie context for request/response
+ * Used for cookie-based authentication - reads cookies from request
+ * and sets refreshed cookies on response automatically
+ */
+export function createSupabaseReqResClient(req: Request, res: Response) {
+  return createServerClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
+    cookies: {
+      getAll: () => {
+        // Parse cookies from request
+        const cookies = req.cookies || {};
+        return Object.entries(cookies).map(([name, value]) => ({
+          name,
+          value: value as string,
+        }));
+      },
+      setAll: (cookies: { name: string; value: string; options?: CookieOptions }[]) => {
+        // Set cookies on response (for token refresh)
+        cookies.forEach(({ name, value, options }) => {
+          res.cookie(name, value, {
+            ...options,
+            // Ensure secure cookies in production
+            secure: env.NODE_ENV === 'production',
+            // httpOnly for auth cookies
+            httpOnly: true,
+            // SameSite for CSRF protection
+            sameSite: 'lax',
+          });
+        });
       },
     },
   });

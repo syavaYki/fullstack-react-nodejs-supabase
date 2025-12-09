@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import cookieParser from 'cookie-parser';
 import swaggerUi from 'swagger-ui-express';
 
 import { env } from './config/env.js';
@@ -19,6 +20,9 @@ app.use(
     credentials: true,
   })
 );
+
+// Cookie parser - required for Supabase cookie-based auth
+app.use(cookieParser());
 
 // Stripe webhook needs raw body - must be before express.json()
 app.use('/api/billing/webhook', express.raw({ type: 'application/json' }));
