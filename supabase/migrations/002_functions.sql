@@ -422,7 +422,7 @@ BEGIN
     SET
         tier_id = p_tier_id,
         status = 'active',
-        billing_cycle = p_billing_cycle,
+        billing_cycle = p_billing_cycle::billing_cycle,
         started_at = NOW(),
         stripe_subscription_id = NULL,
         stripe_price_id = NULL,
