@@ -57,7 +57,7 @@ export function createSupabaseReqResClient(req: Request, res: Response) {
             sameSite: 'none',
             // SameSite=None required for cross-origin cookies (different subdomains)
             // Must be used with Secure=true
-            sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
+            // sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
           });
         });
       },
