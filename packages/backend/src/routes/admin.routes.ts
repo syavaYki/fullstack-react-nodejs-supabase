@@ -4,7 +4,7 @@ import { supabaseAdmin } from '../config/supabase.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
 import { requireAdmin, requireSuperAdmin } from '../middleware/admin.middleware.js';
 import { asyncHandler } from '../middleware/error.middleware.js';
-import { AdminRequest, MembershipTier, Feature } from '../types/index.js';
+import { AdminRequest } from '../types/index.js';
 import { trialService } from '../services/trial.service.js';
 import { usageService } from '../services/usage.service.js';
 
@@ -241,10 +241,12 @@ router.get(
 
     const { data, error } = await supabaseAdmin
       .from('tier_features')
-      .select(`
+      .select(
+        `
         *,
         feature:features(*)
-      `)
+      `
+      )
       .eq('tier_id', id);
 
     if (error) {
@@ -312,10 +314,12 @@ router.put(
     // Fetch updated features
     const { data, error: fetchError } = await supabaseAdmin
       .from('tier_features')
-      .select(`
+      .select(
+        `
         *,
         feature:features(*)
-      `)
+      `
+      )
       .eq('tier_id', id);
 
     if (fetchError) {
@@ -602,10 +606,12 @@ router.get(
   asyncHandler(async (_req: AdminRequest, res: Response) => {
     const { data, error } = await supabaseAdmin
       .from('admin_users')
-      .select(`
+      .select(
+        `
         *,
         user:user_profiles(id, email, first_name, last_name, full_name)
-      `)
+      `
+      )
       .order('created_at');
 
     if (error) {

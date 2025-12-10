@@ -2,11 +2,23 @@ import { supabaseAdmin } from '../config/supabase.js';
 import { TrialStatus, Membership, BillingCycle } from '../types/index.js';
 import { ApiError } from '../middleware/error.middleware.js';
 
+/** Default trial duration in days */
 const TRIAL_DURATION_DAYS = 14;
 
+/**
+ * Service for managing user trial periods.
+ * Handles trial status checks, starting trials, expiration, and conversion to paid plans.
+ * Uses atomic operations to prevent race conditions on expiration.
+ */
 export class TrialService {
   /**
-   * Get trial status for a user
+   * Retrieves the current trial status for a user.
+   * This is a read-only operation - it does NOT auto-expire trials to avoid race conditions.
+   * Use expireTrials() cron job or checkAndExpireTrial() for explicit expiration.
+   *
+   * @param userId - The Supabase user ID
+   * @returns Trial status including days remaining, eligibility, and expiration state
+   * @throws {ApiError} 500 if database query fails
    */
   async getTrialStatus(userId: string): Promise<TrialStatus> {
     const { data: membership, error } = await supabaseAdmin
@@ -19,13 +31,24 @@ export class TrialService {
       throw new ApiError(500, error.message);
     }
 
-    const isOnTrial = membership.status === 'trial';
     const trialEndsAt = membership.trial_ends_at ? new Date(membership.trial_ends_at) : null;
     const now = new Date();
 
+    // Check if trial has expired (comparing dates properly)
+    const isTrialExpired = trialEndsAt ? now > trialEndsAt : false;
+
+    // User is on trial only if status is 'trial' AND trial hasn't expired
+    const isOnTrial = membership.status === 'trial' && !isTrialExpired;
+
+    // Note: We do NOT auto-expire here to avoid race conditions.
+    // The cron job handles expiration, or call checkAndExpireTrial() explicitly.
+
     let daysRemaining = 0;
     if (isOnTrial && trialEndsAt) {
-      daysRemaining = Math.max(0, Math.ceil((trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+      daysRemaining = Math.max(
+        0,
+        Math.ceil((trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      );
     }
 
     const canStartTrial = !membership.has_used_trial && membership.status !== 'trial';
@@ -37,11 +60,94 @@ export class TrialService {
       days_remaining: daysRemaining,
       has_used_trial: membership.has_used_trial,
       can_start_trial: canStartTrial,
+      // Include expired flag so client can handle appropriately
+      is_expired: membership.status === 'trial' && isTrialExpired,
     };
   }
 
   /**
-   * Check if user can start a trial
+   * Check and expire a user's trial if it has ended.
+   * Uses conditional update to prevent race conditions - only updates if status is still 'trial'.
+   * Returns true if trial was expired, false if already expired or not on trial.
+   */
+  async checkAndExpireTrial(userId: string): Promise<boolean> {
+    // Get the free tier for downgrade
+    const { data: freeTier, error: tierError } = await supabaseAdmin
+      .from('membership_tiers')
+      .select('id')
+      .eq('name', 'free')
+      .single();
+
+    if (tierError || !freeTier) {
+      console.error('Failed to find free tier for trial expiration:', tierError);
+      return false;
+    }
+
+    const now = new Date().toISOString();
+
+    // Atomic conditional update: only update if status is 'trial' AND trial has ended
+    // This prevents race conditions - if another request already expired, this will match 0 rows
+    const { data, error: updateError } = await supabaseAdmin
+      .from('memberships')
+      .update({
+        tier_id: freeTier.id,
+        status: 'active',
+      })
+      .eq('user_id', userId)
+      .eq('status', 'trial')
+      .lt('trial_ends_at', now)
+      .select('id');
+
+    if (updateError) {
+      console.error('Failed to expire trial for user:', userId, updateError);
+      return false;
+    }
+
+    // Return true if a row was updated
+    return data !== null && data.length > 0;
+  }
+
+  /**
+   * Expires a single user's trial and downgrades them to the free tier.
+   * Only updates if the user's status is still 'trial'.
+   * Used for targeted expiration of individual users.
+   *
+   * @param userId - The Supabase user ID
+   */
+  async expireSingleTrial(userId: string): Promise<void> {
+    // Get the free tier for downgrade
+    const { data: freeTier, error: tierError } = await supabaseAdmin
+      .from('membership_tiers')
+      .select('id')
+      .eq('name', 'free')
+      .single();
+
+    if (tierError || !freeTier) {
+      console.error('Failed to find free tier for trial expiration:', tierError);
+      return;
+    }
+
+    // Downgrade user to free tier
+    const { error: updateError } = await supabaseAdmin
+      .from('memberships')
+      .update({
+        tier_id: freeTier.id,
+        status: 'active',
+      })
+      .eq('user_id', userId)
+      .eq('status', 'trial');
+
+    if (updateError) {
+      console.error('Failed to expire trial for user:', userId, updateError);
+    }
+  }
+
+  /**
+   * Checks if a user is eligible to start a trial.
+   * Users can only use the trial once.
+   *
+   * @param userId - The Supabase user ID
+   * @returns True if user can start a trial, false if already used or on trial
    */
   async canStartTrial(userId: string): Promise<boolean> {
     const status = await this.getTrialStatus(userId);
@@ -49,7 +155,14 @@ export class TrialService {
   }
 
   /**
-   * Start a trial for a user
+   * Starts a trial period for a user.
+   * Sets the user's membership to the trial tier for TRIAL_DURATION_DAYS.
+   * Marks has_used_trial to prevent future trials.
+   *
+   * @param userId - The Supabase user ID
+   * @returns The updated membership with trial status
+   * @throws {ApiError} 400 if user is not eligible for trial
+   * @throws {ApiError} 500 if trial tier not found or database error
    */
   async startTrial(userId: string): Promise<Membership> {
     // Check eligibility
@@ -96,8 +209,12 @@ export class TrialService {
   }
 
   /**
-   * Expire trials that have ended (for cron job)
-   * Returns number of trials expired
+   * Bulk expires all trials that have ended.
+   * Intended to be called by a cron job (e.g., hourly or daily).
+   * Downgrades all expired trial users to the free tier.
+   *
+   * @returns Number of trials that were expired
+   * @throws {ApiError} 500 if free tier not found or database error
    */
   async expireTrials(): Promise<number> {
     const now = new Date().toISOString();
@@ -146,8 +263,18 @@ export class TrialService {
   }
 
   /**
-   * Convert trial to paid subscription
-   * This is typically called after a successful Stripe checkout
+   * Converts a user's trial membership to a paid subscription.
+   * Called after successful Stripe checkout during a trial period.
+   * Validates that user is on trial and target tier is a paid tier.
+   *
+   * @param userId - The Supabase user ID
+   * @param tierId - The UUID of the paid tier to convert to
+   * @param billingCycle - The billing cycle ('monthly' or 'yearly')
+   * @param stripeData - Optional Stripe subscription details
+   * @returns The updated membership with active status
+   * @throws {ApiError} 400 if user is not on trial or target tier is invalid
+   * @throws {ApiError} 404 if tier not found
+   * @throws {ApiError} 500 if database error
    */
   async convertTrialToPaid(
     userId: string,

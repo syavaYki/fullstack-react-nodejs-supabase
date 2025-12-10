@@ -1,7 +1,9 @@
 import { z } from 'zod';
 import dotenv from 'dotenv';
 
-dotenv.config({ path: '../../.env' });
+// Load .env first, then .env.local (which overrides)
+dotenv.config({ path: '.env' });
+dotenv.config({ path: '.env.local', override: true });
 
 const envSchema = z.object({
   // Server
@@ -12,7 +14,7 @@ const envSchema = z.object({
   SUPABASE_URL: z.string().url(),
   SUPABASE_ANON_KEY: z.string().min(1),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
-  JWT_SECRET: z.string().min(1),
+  // JWT_SECRET: z.string().min(1),
 
   // Stripe
   STRIPE_SECRET_KEY: z.string().min(1),
@@ -22,6 +24,10 @@ const envSchema = z.object({
   // URLs
   FRONTEND_URL: z.string().url().default('http://localhost:3000'),
   BACKEND_URL: z.string().url().default('http://localhost:3001'),
+
+  // Email (Resend) - Optional
+  RESEND_API_KEY: z.string().optional(),
+  CONTACT_NOTIFICATION_EMAIL: z.string().email().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

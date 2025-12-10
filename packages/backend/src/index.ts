@@ -14,10 +14,29 @@ const app = express();
 
 // Security middleware
 app.use(helmet());
+
+// CORS configuration
+const allowedOrigins = [
+  env.FRONTEND_URL,
+  // Add additional origins for development
+  ...(env.NODE_ENV === 'development' ? ['http://localhost:3000', 'http://localhost:5173'] : []),
+].filter(Boolean);
+
 app.use(
   cors({
-    origin: env.FRONTEND_URL,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, Postman, etc.)
+      if (!origin) {
+        return callback(null, true);
+      }
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error(`CORS not allowed for origin: ${origin}`));
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   })
 );
 
@@ -27,9 +46,9 @@ app.use(cookieParser());
 // Stripe webhook needs raw body - must be before express.json()
 app.use('/api/billing/webhook', express.raw({ type: 'application/json' }));
 
-// Parse JSON bodies for all other routes
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Parse JSON bodies for all other routes with size limits to prevent payload bombs
+app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
 // Logging
 if (env.NODE_ENV !== 'test') {

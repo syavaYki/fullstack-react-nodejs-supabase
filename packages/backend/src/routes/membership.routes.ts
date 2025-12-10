@@ -1,4 +1,4 @@
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { membershipService } from '../services/membership.service.js';
 import { trialService } from '../services/trial.service.js';
@@ -8,6 +8,38 @@ import { asyncHandler } from '../middleware/error.middleware.js';
 import { AuthenticatedRequest } from '../types/index.js';
 
 const router = Router();
+
+// ============================================
+// PUBLIC ENDPOINTS (no authentication required)
+// ============================================
+
+/**
+ * @swagger
+ * /api/membership/public/tiers-with-features:
+ *   get:
+ *     summary: Get all tiers with their features (PUBLIC - no auth required)
+ *     tags: [Membership]
+ *     responses:
+ *       200:
+ *         description: All tiers with their features
+ */
+router.get(
+  '/public/tiers-with-features',
+  asyncHandler(async (req: Request, res: Response) => {
+    const tiers = await membershipService.getTiers();
+    const tiersWithFeatures = await Promise.all(
+      tiers.map(async (tier) => ({
+        ...tier,
+        features: await membershipService.getTierFeatures(tier.id),
+      }))
+    );
+    res.json({ success: true, data: tiersWithFeatures });
+  })
+);
+
+// ============================================
+// AUTHENTICATED ENDPOINTS
+// ============================================
 
 /**
  * @swagger
@@ -345,6 +377,12 @@ const convertTrialSchema = z.object({
   billing_cycle: z.enum(['monthly', 'yearly']),
 });
 
+// Validation schema for tier change (without payment)
+const changeTierSchema = z.object({
+  tier_id: z.string().uuid(),
+  billing_cycle: z.enum(['monthly', 'yearly']).optional().default('monthly'),
+});
+
 /**
  * @swagger
  * /api/membership/trial/convert:
@@ -390,6 +428,63 @@ router.post(
       success: true,
       data: membership,
       message: 'Successfully upgraded to paid plan',
+    });
+  })
+);
+
+// ============================================
+// TIER CHANGE (WITHOUT PAYMENT - FOR TESTING)
+// ============================================
+
+/**
+ * @swagger
+ * /api/membership/change-tier:
+ *   post:
+ *     summary: Change membership tier without payment (development/testing)
+ *     description: Directly changes the user's tier without going through Stripe checkout. Useful for testing and development.
+ *     tags: [Membership]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [tier_id]
+ *             properties:
+ *               tier_id:
+ *                 type: string
+ *                 format: uuid
+ *                 description: The ID of the tier to change to
+ *               billing_cycle:
+ *                 type: string
+ *                 enum: [monthly, yearly]
+ *                 default: monthly
+ *     responses:
+ *       200:
+ *         description: Tier changed successfully
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Not authenticated
+ *       404:
+ *         description: Tier not found
+ */
+router.post(
+  '/change-tier',
+  authMiddleware,
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) {
+      res.status(401).json({ success: false, error: 'Not authenticated' });
+      return;
+    }
+
+    const { tier_id, billing_cycle } = changeTierSchema.parse(req.body);
+    const membership = await membershipService.changeTier(req.user.id, tier_id, billing_cycle);
+
+    res.json({
+      success: true,
+      data: membership,
+      message: `Successfully changed to ${membership.tier.display_name} tier`,
     });
   })
 );

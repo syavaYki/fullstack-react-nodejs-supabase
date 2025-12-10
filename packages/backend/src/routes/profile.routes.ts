@@ -10,16 +10,37 @@ const router = Router();
 // All profile routes require authentication
 router.use(authMiddleware);
 
+// Lenient URL validation - accepts URLs with or without protocol
+const lenientUrl = z
+  .string()
+  .transform((val) => (val === '' ? null : val))
+  .nullable()
+  .optional()
+  .refine(
+    (val) => {
+      if (val === null || val === undefined) return true;
+      // Add https:// if no protocol provided
+      const urlToTest = val.match(/^https?:\/\//) ? val : `https://${val}`;
+      try {
+        new URL(urlToTest);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    { message: 'Invalid URL' }
+  );
+
 // Validation schema for profile updates
 // Note: full_name is computed from first_name + last_name, cannot be updated directly
 const updateProfileSchema = z.object({
   first_name: z.string().max(50).optional().nullable(),
   last_name: z.string().max(50).optional().nullable(),
-  avatar_url: z.string().url().optional().nullable(),
+  avatar_url: lenientUrl,
   phone: z.string().max(20).optional().nullable(),
   company: z.string().max(100).optional().nullable(),
   bio: z.string().max(500).optional().nullable(),
-  website: z.string().url().optional().nullable(),
+  website: lenientUrl,
 });
 
 /**

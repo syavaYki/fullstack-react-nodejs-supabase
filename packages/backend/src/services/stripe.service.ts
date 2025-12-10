@@ -6,10 +6,19 @@ import { membershipService } from './membership.service.js';
 import { BillingCycle, PaymentHistory } from '../types/index.js';
 import { ApiError } from '../middleware/error.middleware.js';
 
+/**
+ * Service for handling Stripe payment operations.
+ * Manages customers, checkout sessions, billing portal, and subscription lifecycle.
+ * Note: stripe_customer_id is stored in user_profiles, not memberships.
+ */
 export class StripeService {
   /**
-   * Create or get Stripe customer for user
-   * Note: stripe_customer_id is now stored in user_profiles, not memberships
+   * Gets an existing Stripe customer or creates a new one for the user.
+   * Checks user_profiles for existing customer ID before creating.
+   *
+   * @param userId - The Supabase user ID
+   * @param email - The user's email for Stripe customer creation
+   * @returns The Stripe customer ID (cus_xxx)
    */
   async getOrCreateCustomer(userId: string, email: string): Promise<string> {
     // Check if user already has a Stripe customer ID (stored in user_profiles)
@@ -41,7 +50,19 @@ export class StripeService {
   }
 
   /**
-   * Create Stripe Checkout session for subscription upgrade
+   * Creates a Stripe Checkout session for subscription purchase.
+   * User is redirected to Stripe's hosted checkout page to complete payment.
+   * Includes user and tier metadata for webhook processing.
+   *
+   * @param userId - The Supabase user ID
+   * @param email - The user's email address
+   * @param tierId - The membership tier ID to purchase
+   * @param billingCycle - Either 'monthly' or 'yearly'
+   * @param successUrl - Optional redirect URL after successful payment
+   * @param cancelUrl - Optional redirect URL if user cancels
+   * @returns The Stripe checkout session URL to redirect the user to
+   * @throws {ApiError} 400 if tier has no configured Stripe price
+   * @throws {ApiError} 500 if session creation fails
    */
   async createCheckoutSession(
     userId: string,
@@ -56,9 +77,7 @@ export class StripeService {
 
     // Get the price ID based on billing cycle
     const priceId =
-      billingCycle === 'monthly'
-        ? tier.stripe_price_id_monthly
-        : tier.stripe_price_id_yearly;
+      billingCycle === 'monthly' ? tier.stripe_price_id_monthly : tier.stripe_price_id_yearly;
 
     if (!priceId) {
       throw new ApiError(400, `No Stripe price configured for ${tier.name} ${billingCycle}`);
@@ -77,7 +96,8 @@ export class StripeService {
           quantity: 1,
         },
       ],
-      success_url: successUrl || `${env.FRONTEND_URL}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
+      success_url:
+        successUrl || `${env.FRONTEND_URL}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: cancelUrl || `${env.FRONTEND_URL}/billing/cancel`,
       metadata: {
         supabase_user_id: userId,
@@ -100,7 +120,12 @@ export class StripeService {
   }
 
   /**
-   * Create Stripe Customer Portal session for managing subscription
+   * Creates a Stripe Billing Portal session for subscription management.
+   * Allows users to update payment methods, view invoices, and cancel subscriptions.
+   *
+   * @param userId - The Supabase user ID
+   * @returns The billing portal URL to redirect the user to
+   * @throws {ApiError} 400 if user has no Stripe customer ID
    */
   async createPortalSession(userId: string): Promise<string> {
     // Get user's Stripe customer ID from user_profiles
@@ -123,7 +148,12 @@ export class StripeService {
   }
 
   /**
-   * Get user's payment history
+   * Retrieves a user's payment history from the database.
+   * Returns all payments ordered by most recent first.
+   *
+   * @param userId - The Supabase user ID
+   * @returns Array of payment history records
+   * @throws {ApiError} 500 if database query fails
    */
   async getPaymentHistory(userId: string): Promise<PaymentHistory[]> {
     const { data, error } = await supabaseAdmin
@@ -140,7 +170,11 @@ export class StripeService {
   }
 
   /**
-   * Record a payment in history
+   * Records a payment in the payment_history table.
+   * Called by webhook handlers after processing payment events.
+   *
+   * @param payment - Payment data excluding auto-generated fields
+   * @throws {ApiError} 500 if database insert fails
    */
   async recordPayment(payment: Omit<PaymentHistory, 'id' | 'created_at'>): Promise<void> {
     const { error } = await supabaseAdmin.from('payment_history').insert(payment);
@@ -152,14 +186,21 @@ export class StripeService {
   }
 
   /**
-   * Get Stripe subscription details
+   * Retrieves a Stripe subscription by its ID.
+   *
+   * @param subscriptionId - The Stripe subscription ID (sub_xxx)
+   * @returns The full Stripe subscription object
    */
   async getSubscription(subscriptionId: string): Promise<Stripe.Subscription> {
     return stripe.subscriptions.retrieve(subscriptionId);
   }
 
   /**
-   * Cancel Stripe subscription at period end
+   * Cancels a subscription at the end of the current billing period.
+   * User retains access until the period ends.
+   *
+   * @param subscriptionId - The Stripe subscription ID to cancel
+   * @returns The updated Stripe subscription object
    */
   async cancelSubscription(subscriptionId: string): Promise<Stripe.Subscription> {
     return stripe.subscriptions.update(subscriptionId, {
@@ -168,7 +209,11 @@ export class StripeService {
   }
 
   /**
-   * Reactivate cancelled subscription
+   * Reactivates a subscription that was scheduled for cancellation.
+   * Only works if the subscription hasn't ended yet.
+   *
+   * @param subscriptionId - The Stripe subscription ID to reactivate
+   * @returns The updated Stripe subscription object
    */
   async reactivateSubscription(subscriptionId: string): Promise<Stripe.Subscription> {
     return stripe.subscriptions.update(subscriptionId, {

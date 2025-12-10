@@ -46,7 +46,7 @@ export interface MembershipTier {
   updated_at: string;
 }
 
-// Renamed from UserMembership to Membership (table name change)
+// Membership
 export interface Membership {
   id: string;
   user_id: string;
@@ -194,6 +194,7 @@ export interface UserTierWithFeatures {
   tier_name: string;
   tier_display_name: string;
   membership_status: MembershipStatus;
+  trial_ends_at: string | null;
   features: Record<string, unknown>;
 }
 
@@ -208,6 +209,7 @@ export interface TrialStatus {
   days_remaining: number;
   has_used_trial: boolean;
   can_start_trial: boolean;
+  is_expired?: boolean; // True if trial period has ended but status not yet updated
 }
 
 export interface ConvertTrialInput {
@@ -328,4 +330,32 @@ export interface SetTierFeatureInput {
 export interface AdminRequest extends AuthenticatedRequest {
   isAdmin?: boolean;
   adminRole?: AdminRole;
+}
+
+// ============================================
+// CONTACT SUBMISSION TYPES
+// ============================================
+
+export type ContactSubmissionStatus = 'new' | 'read' | 'replied' | 'archived';
+
+export interface ContactSubmission {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  subject: string;
+  message: string;
+  ip_address: string | null;
+  user_agent: string | null;
+  status: ContactSubmissionStatus;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface CreateContactSubmissionInput {
+  first_name: string;
+  last_name: string;
+  email: string;
+  subject: string;
+  message: string;
 }

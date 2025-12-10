@@ -5,9 +5,20 @@ import { membershipService } from './membership.service.js';
 import { stripeService } from './stripe.service.js';
 import { ApiError } from '../middleware/error.middleware.js';
 
+/**
+ * Service for handling Stripe webhook events.
+ * Processes subscription lifecycle events, payments, and invoices.
+ * Events are logged to stripe_webhook_events table for auditing and replay.
+ */
 export class WebhookService {
   /**
-   * Verify and construct Stripe webhook event
+   * Verifies the Stripe webhook signature and constructs the event object.
+   * Should be called with the raw request body (Buffer, not parsed JSON).
+   *
+   * @param payload - Raw request body as Buffer
+   * @param signature - Stripe-Signature header value
+   * @returns Verified Stripe event object
+   * @throws {ApiError} 400 if signature verification fails
    */
   verifyWebhookSignature(payload: Buffer, signature: string): Stripe.Event {
     try {
@@ -18,7 +29,10 @@ export class WebhookService {
   }
 
   /**
-   * Log webhook event to database
+   * Logs a webhook event to the database for auditing.
+   * Ignores duplicate events (idempotency via stripe_event_id unique constraint).
+   *
+   * @param event - The Stripe event to log
    */
   async logWebhookEvent(event: Stripe.Event): Promise<void> {
     const { error } = await supabaseAdmin.from('stripe_webhook_events').insert({
@@ -35,7 +49,11 @@ export class WebhookService {
   }
 
   /**
-   * Mark webhook event as processed
+   * Marks a webhook event as processed in the database.
+   * Records the processing timestamp and any error message.
+   *
+   * @param eventId - The Stripe event ID
+   * @param error - Optional error message if processing failed
    */
   async markEventProcessed(eventId: string, error?: string): Promise<void> {
     await supabaseAdmin
@@ -49,7 +67,12 @@ export class WebhookService {
   }
 
   /**
-   * Process Stripe webhook event
+   * Routes and processes a Stripe webhook event.
+   * Logs the event, delegates to appropriate handler, and marks as processed.
+   * Handles: checkout.session.completed, subscription.*, invoice.*
+   *
+   * @param event - The verified Stripe event to process
+   * @throws Re-throws any handler errors after marking the event
    */
   async processEvent(event: Stripe.Event): Promise<void> {
     // Log the event first
@@ -91,7 +114,11 @@ export class WebhookService {
   }
 
   /**
-   * Handle checkout.session.completed
+   * Handles successful checkout completion.
+   * Saves customer ID and upgrades user membership to the purchased tier.
+   * Expects metadata: supabase_user_id, tier_id, billing_cycle.
+   *
+   * @param session - The completed Stripe checkout session
    */
   private async handleCheckoutCompleted(session: Stripe.Checkout.Session): Promise<void> {
     const userId = session.metadata?.supabase_user_id;
@@ -126,7 +153,11 @@ export class WebhookService {
   }
 
   /**
-   * Handle subscription updates
+   * Handles subscription create/update events.
+   * Maps Stripe subscription status to membership status and updates billing period.
+   * Expects metadata: supabase_user_id.
+   *
+   * @param subscription - The Stripe subscription object
    */
   private async handleSubscriptionUpdated(subscription: Stripe.Subscription): Promise<void> {
     const userId = subscription.metadata?.supabase_user_id;
@@ -156,7 +187,11 @@ export class WebhookService {
   }
 
   /**
-   * Handle subscription cancellation
+   * Handles subscription deletion/cancellation.
+   * Downgrades user to free tier and clears subscription data.
+   * Expects metadata: supabase_user_id.
+   *
+   * @param subscription - The deleted Stripe subscription
    */
   private async handleSubscriptionDeleted(subscription: Stripe.Subscription): Promise<void> {
     const userId = subscription.metadata?.supabase_user_id;
@@ -185,7 +220,11 @@ export class WebhookService {
   }
 
   /**
-   * Handle successful invoice payment
+   * Handles successful invoice payment.
+   * Records payment in history and updates membership with payment info.
+   * Only processes invoices linked to subscriptions.
+   *
+   * @param invoice - The paid Stripe invoice
    */
   private async handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
     if (!invoice.subscription) return;
@@ -207,17 +246,19 @@ export class WebhookService {
     await stripeService.recordPayment({
       user_id: userId,
       membership_id: membership?.id || null,
-      stripe_payment_intent_id: invoice.payment_intent as string || null,
+      stripe_payment_intent_id: (invoice.payment_intent as string) || null,
       stripe_invoice_id: invoice.id,
-      stripe_charge_id: invoice.charge as string || null,
-      stripe_subscription_id: invoice.subscription as string || null,
+      stripe_charge_id: (invoice.charge as string) || null,
+      stripe_subscription_id: (invoice.subscription as string) || null,
       amount: invoice.amount_paid / 100,
       currency: invoice.currency,
       status: 'succeeded',
       invoice_url: invoice.hosted_invoice_url || null,
       receipt_url: null,
       invoice_pdf: invoice.invoice_pdf || null,
-      description: invoice.description || `Payment for ${invoice.lines.data[0]?.description || 'subscription'}`,
+      description:
+        invoice.description ||
+        `Payment for ${invoice.lines.data[0]?.description || 'subscription'}`,
       metadata: {},
       failure_reason: null,
       paid_at: invoice.status_transitions?.paid_at
@@ -238,7 +279,11 @@ export class WebhookService {
   }
 
   /**
-   * Handle failed invoice payment
+   * Handles failed invoice payment.
+   * Records failed payment in history and sets membership to past_due status.
+   * Only processes invoices linked to subscriptions.
+   *
+   * @param invoice - The failed Stripe invoice
    */
   private async handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<void> {
     if (!invoice.subscription) return;
@@ -259,10 +304,10 @@ export class WebhookService {
     await stripeService.recordPayment({
       user_id: userId,
       membership_id: membership?.id || null,
-      stripe_payment_intent_id: invoice.payment_intent as string || null,
+      stripe_payment_intent_id: (invoice.payment_intent as string) || null,
       stripe_invoice_id: invoice.id,
-      stripe_charge_id: invoice.charge as string || null,
-      stripe_subscription_id: invoice.subscription as string || null,
+      stripe_charge_id: (invoice.charge as string) || null,
+      stripe_subscription_id: (invoice.subscription as string) || null,
       amount: invoice.amount_due / 100,
       currency: invoice.currency,
       status: 'failed',

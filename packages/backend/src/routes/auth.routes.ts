@@ -3,6 +3,11 @@ import { z } from 'zod';
 import { authService } from '../services/auth.service.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
 import { asyncHandler } from '../middleware/error.middleware.js';
+import {
+  registerRateLimit,
+  loginRateLimit,
+  forgotPasswordRateLimit,
+} from '../middleware/rateLimit.middleware.js';
 import { AuthenticatedRequest } from '../types/index.js';
 import { createSupabaseReqResClient } from '../config/supabase.js';
 import { env } from '../config/env.js';
@@ -72,6 +77,7 @@ const resetPasswordSchema = z.object({
  */
 router.post(
   '/register',
+  registerRateLimit,
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const input = registerSchema.parse(req.body);
     const result = await authService.register(input);
@@ -115,6 +121,7 @@ router.post(
  */
 router.post(
   '/login',
+  loginRateLimit,
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const input = loginSchema.parse(req.body);
     const result = await authService.login(input);
@@ -218,6 +225,7 @@ router.post(
  */
 router.post(
   '/forgot-password',
+  forgotPasswordRateLimit,
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const { email, redirect_url } = forgotPasswordSchema.parse(req.body);
     await authService.forgotPassword(email, redirect_url);

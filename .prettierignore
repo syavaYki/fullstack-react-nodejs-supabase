@@ -1,0 +1,19 @@
+# Build outputs
+dist
+build
+.react-router
+
+# Dependencies
+node_modules
+
+# Lock files
+package-lock.json
+
+# Generated files
+*.d.ts
+*.min.js
+*.min.css
+
+# Other
+.git
+coverage

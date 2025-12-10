@@ -56,11 +56,7 @@ export async function membershipMiddleware(
  * Middleware factory to require a specific tier or higher
  */
 export function requireTier(...allowedTiers: string[]) {
-  return async (
-    req: MembershipRequest,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> => {
+  return async (req: MembershipRequest, res: Response, next: NextFunction): Promise<void> => {
     if (!req.membership) {
       res.status(403).json({
         success: false,
@@ -77,12 +73,27 @@ export function requireTier(...allowedTiers: string[]) {
       return;
     }
 
-    if (req.membership.membership_status !== 'active' && req.membership.membership_status !== 'trial') {
+    if (
+      req.membership.membership_status !== 'active' &&
+      req.membership.membership_status !== 'trial'
+    ) {
       res.status(403).json({
         success: false,
         error: 'Your membership is not active',
       });
       return;
+    }
+
+    // Check if trial has expired
+    if (req.membership.membership_status === 'trial' && req.membership.trial_ends_at) {
+      const trialEndsAt = new Date(req.membership.trial_ends_at);
+      if (new Date() > trialEndsAt) {
+        res.status(403).json({
+          success: false,
+          error: 'Your trial has expired. Please upgrade to continue.',
+        });
+        return;
+      }
     }
 
     next();
@@ -93,11 +104,7 @@ export function requireTier(...allowedTiers: string[]) {
  * Middleware factory to require a specific feature
  */
 export function requireFeature(featureKey: string) {
-  return async (
-    req: MembershipRequest,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> => {
+  return async (req: MembershipRequest, res: Response, next: NextFunction): Promise<void> => {
     if (!req.user) {
       res.status(401).json({
         success: false,

@@ -140,23 +140,25 @@ The backend supports **dual authentication methods**:
 #### How It Works
 
 **Browser Clients (Cookie Auth):**
+
 - Frontend calls `supabase.auth.signInWithPassword()` or OAuth
 - Supabase client automatically sets HttpOnly cookies
 - Backend middleware reads cookies using `@supabase/ssr`
 - Expired tokens are automatically refreshed, new cookies set in response
 
 **API Clients (Bearer Token):**
+
 - Get token from Supabase auth
 - Send `Authorization: Bearer <token>` header
 - Backend validates token with Supabase Admin client
 
 #### Cookie Security
 
-| Property | Value | Description |
-|----------|-------|-------------|
-| `HttpOnly` | `true` | Prevents XSS access via JavaScript |
-| `Secure` | `true` (prod) | HTTPS only in production |
-| `SameSite` | `lax` | CSRF protection |
+| Property   | Value         | Description                        |
+| ---------- | ------------- | ---------------------------------- |
+| `HttpOnly` | `true`        | Prevents XSS access via JavaScript |
+| `Secure`   | `true` (prod) | HTTPS only in production           |
+| `SameSite` | `lax`         | CSRF protection                    |
 
 #### OAuth Callback
 
@@ -198,17 +200,17 @@ npm install
 
 Create a `.env` file in `packages/backend/`:
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `NODE_ENV` | Yes | `development` or `production` |
-| `PORT` | No | Server port (default: 3001) |
-| `BACKEND_URL` | Yes | Full backend URL (e.g., `http://localhost:3001`) |
-| `FRONTEND_URL` | Yes | Frontend URL for CORS and redirects |
-| `SUPABASE_URL` | Yes | Your Supabase project URL |
-| `SUPABASE_ANON_KEY` | Yes | Supabase anon/public key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Supabase service role key (admin operations) |
-| `STRIPE_SECRET_KEY` | Yes | Stripe secret API key |
-| `STRIPE_WEBHOOK_SECRET` | Yes | Stripe webhook signing secret |
+| Variable                    | Required | Description                                      |
+| --------------------------- | -------- | ------------------------------------------------ |
+| `NODE_ENV`                  | Yes      | `development` or `production`                    |
+| `PORT`                      | No       | Server port (default: 3001)                      |
+| `BACKEND_URL`               | Yes      | Full backend URL (e.g., `http://localhost:3001`) |
+| `FRONTEND_URL`              | Yes      | Frontend URL for CORS and redirects              |
+| `SUPABASE_URL`              | Yes      | Your Supabase project URL                        |
+| `SUPABASE_ANON_KEY`         | Yes      | Supabase anon/public key                         |
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes      | Supabase service role key (admin operations)     |
+| `STRIPE_SECRET_KEY`         | Yes      | Stripe secret API key                            |
+| `STRIPE_WEBHOOK_SECRET`     | Yes      | Stripe webhook signing secret                    |
 
 Example `.env`:
 
@@ -310,15 +312,15 @@ Error responses:
 
 ### Authentication (`/api/auth`)
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/register` | No | Register new user |
-| POST | `/login` | No | Login with email/password |
-| POST | `/logout` | Yes | Logout current session |
-| POST | `/refresh` | No | Refresh access token |
-| POST | `/forgot-password` | No | Request password reset |
-| POST | `/reset-password` | No | Reset password with token |
-| GET | `/me` | Yes | Get current user info |
+| Method | Endpoint           | Auth | Description               |
+| ------ | ------------------ | ---- | ------------------------- |
+| POST   | `/register`        | No   | Register new user         |
+| POST   | `/login`           | No   | Login with email/password |
+| POST   | `/logout`          | Yes  | Logout current session    |
+| POST   | `/refresh`         | No   | Refresh access token      |
+| POST   | `/forgot-password` | No   | Request password reset    |
+| POST   | `/reset-password`  | No   | Reset password with token |
+| GET    | `/me`              | Yes  | Get current user info     |
 
 #### POST `/api/auth/register`
 
@@ -491,11 +493,11 @@ Get current authenticated user information.
 
 ### Profile (`/api/profile`)
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| GET | `/` | Yes | Get current user profile |
-| PUT | `/` | Yes | Update user profile |
-| DELETE | `/` | Yes | Delete user account |
+| Method | Endpoint | Auth | Description              |
+| ------ | -------- | ---- | ------------------------ |
+| GET    | `/`      | Yes  | Get current user profile |
+| PUT    | `/`      | Yes  | Update user profile      |
+| DELETE | `/`      | Yes  | Delete user account      |
 
 #### GET `/api/profile`
 
@@ -551,7 +553,9 @@ Update user profile fields.
 ```json
 {
   "success": true,
-  "data": { /* updated profile */ }
+  "data": {
+    /* updated profile */
+  }
 }
 ```
 
@@ -574,19 +578,19 @@ Delete the user account and all associated data.
 
 ### Membership (`/api/membership`)
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| GET | `/tiers` | Yes | Get all membership tiers |
-| GET | `/tiers/:tierId/features` | Yes | Get features for a tier |
-| GET | `/` | Yes | Get current membership |
-| GET | `/features` | Yes | Get user's tier with features |
-| GET | `/check-feature/:featureKey` | Yes | Check if user has feature |
-| GET | `/feature-limit/:featureKey` | Yes | Get feature limit value |
-| GET | `/trial/status` | Yes | Get trial status |
-| POST | `/trial/start` | Yes | Start 14-day trial |
-| POST | `/trial/convert` | Yes | Convert trial to paid |
-| GET | `/usage` | Yes | Get all usage data |
-| GET | `/usage/:featureKey` | Yes | Get specific feature usage |
+| Method | Endpoint                     | Auth | Description                   |
+| ------ | ---------------------------- | ---- | ----------------------------- |
+| GET    | `/tiers`                     | Yes  | Get all membership tiers      |
+| GET    | `/tiers/:tierId/features`    | Yes  | Get features for a tier       |
+| GET    | `/`                          | Yes  | Get current membership        |
+| GET    | `/features`                  | Yes  | Get user's tier with features |
+| GET    | `/check-feature/:featureKey` | Yes  | Check if user has feature     |
+| GET    | `/feature-limit/:featureKey` | Yes  | Get feature limit value       |
+| GET    | `/trial/status`              | Yes  | Get trial status              |
+| POST   | `/trial/start`               | Yes  | Start 14-day trial            |
+| POST   | `/trial/convert`             | Yes  | Convert trial to paid         |
+| GET    | `/usage`                     | Yes  | Get all usage data            |
+| GET    | `/usage/:featureKey`         | Yes  | Get specific feature usage    |
 
 #### GET `/api/membership/tiers`
 
@@ -741,7 +745,9 @@ Convert trial to paid subscription.
 ```json
 {
   "success": true,
-  "data": { /* updated membership */ },
+  "data": {
+    /* updated membership */
+  },
   "message": "Successfully upgraded to paid plan"
 }
 ```
@@ -786,12 +792,12 @@ Get all usage tracking data for current user.
 
 ### Billing (`/api/billing`)
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/create-checkout-session` | Yes | Create Stripe checkout |
-| POST | `/create-portal-session` | Yes | Create billing portal |
-| GET | `/payment-history` | Yes | Get payment history |
-| POST | `/webhook` | No | Stripe webhook handler |
+| Method | Endpoint                   | Auth | Description            |
+| ------ | -------------------------- | ---- | ---------------------- |
+| POST   | `/create-checkout-session` | Yes  | Create Stripe checkout |
+| POST   | `/create-portal-session`   | Yes  | Create billing portal  |
+| GET    | `/payment-history`         | Yes  | Get payment history    |
+| POST   | `/webhook`                 | No   | Stripe webhook handler |
 
 #### POST `/api/billing/create-checkout-session`
 
@@ -870,30 +876,30 @@ Stripe webhook endpoint. Automatically processes these events:
 
 All admin endpoints require `admin` or `super_admin` role.
 
-| Method | Endpoint | Role | Description |
-|--------|----------|------|-------------|
-| **Tier Management** ||||
-| GET | `/tiers` | admin | List all tiers (including inactive) |
-| POST | `/tiers` | admin | Create new tier |
-| PUT | `/tiers/:id` | admin | Update tier |
-| DELETE | `/tiers/:id` | admin | Deactivate tier |
-| **Feature Management** ||||
-| GET | `/features` | admin | List all features |
-| POST | `/features` | admin | Create new feature |
-| PUT | `/features/:id` | admin | Update feature |
-| DELETE | `/features/:id` | admin | Delete feature |
-| **Tier-Feature Assignment** ||||
-| GET | `/tiers/:tierId/features` | admin | Get tier's features |
-| POST | `/tiers/:tierId/features` | admin | Assign feature to tier |
-| DELETE | `/tiers/:tierId/features/:featureId` | admin | Remove feature |
-| **User Management** ||||
-| GET | `/users/:userId/membership` | admin | Get user membership |
-| PUT | `/users/:userId/membership` | super_admin | Update user membership |
-| GET | `/users/:userId/usage` | admin | Get user usage |
-| POST | `/users/:userId/usage/reset` | super_admin | Reset user usage |
-| **Cron Jobs** ||||
-| POST | `/cron/expire-trials` | admin | Expire trials (for cron) |
-| POST | `/cron/reset-usage` | admin | Reset periodic usage |
+| Method                      | Endpoint                             | Role        | Description                         |
+| --------------------------- | ------------------------------------ | ----------- | ----------------------------------- |
+| **Tier Management**         |                                      |             |                                     |
+| GET                         | `/tiers`                             | admin       | List all tiers (including inactive) |
+| POST                        | `/tiers`                             | admin       | Create new tier                     |
+| PUT                         | `/tiers/:id`                         | admin       | Update tier                         |
+| DELETE                      | `/tiers/:id`                         | admin       | Deactivate tier                     |
+| **Feature Management**      |                                      |             |                                     |
+| GET                         | `/features`                          | admin       | List all features                   |
+| POST                        | `/features`                          | admin       | Create new feature                  |
+| PUT                         | `/features/:id`                      | admin       | Update feature                      |
+| DELETE                      | `/features/:id`                      | admin       | Delete feature                      |
+| **Tier-Feature Assignment** |                                      |             |                                     |
+| GET                         | `/tiers/:tierId/features`            | admin       | Get tier's features                 |
+| POST                        | `/tiers/:tierId/features`            | admin       | Assign feature to tier              |
+| DELETE                      | `/tiers/:tierId/features/:featureId` | admin       | Remove feature                      |
+| **User Management**         |                                      |             |                                     |
+| GET                         | `/users/:userId/membership`          | admin       | Get user membership                 |
+| PUT                         | `/users/:userId/membership`          | super_admin | Update user membership              |
+| GET                         | `/users/:userId/usage`               | admin       | Get user usage                      |
+| POST                        | `/users/:userId/usage/reset`         | super_admin | Reset user usage                    |
+| **Cron Jobs**               |                                      |             |                                     |
+| POST                        | `/cron/expire-trials`                | admin       | Expire trials (for cron)            |
+| POST                        | `/cron/reset-usage`                  | admin       | Reset periodic usage                |
 
 #### POST `/api/admin/tiers`
 
@@ -976,6 +982,43 @@ Expire all trials that have passed their end date. Call this from a cron job.
 
 ---
 
+### Contact (`/api/contact`)
+
+| Method | Endpoint | Auth | Description                        |
+| ------ | -------- | ---- | ---------------------------------- |
+| POST   | `/`      | No   | Submit contact form (rate-limited) |
+
+#### POST `/api/contact`
+
+Submit a contact form message. Public endpoint with rate limiting (5 requests per 15 minutes per IP).
+
+**Request Body:**
+
+```json
+{
+  "first_name": "John",
+  "last_name": "Doe",
+  "email": "john@example.com",
+  "subject": "General Inquiry",
+  "message": "I have a question about your service..."
+}
+```
+
+**Response (200):**
+
+```json
+{
+  "success": true,
+  "message": "Thank you for your message. We'll get back to you soon!"
+}
+```
+
+**Error (429):** Rate limit exceeded.
+
+**Error (400):** Validation error (missing/invalid fields).
+
+---
+
 ## Services
 
 ### AuthService
@@ -984,13 +1027,13 @@ Handles all authentication operations through Supabase Auth.
 
 ```typescript
 // Key methods
-authService.register(email, password, metadata)
-authService.login(email, password)
-authService.logout(accessToken)
-authService.refreshToken(refreshToken)
-authService.resetPassword(email)
-authService.updatePassword(accessToken, newPassword)
-authService.getUser(accessToken)
+authService.register(email, password, metadata);
+authService.login(email, password);
+authService.logout(accessToken);
+authService.refreshToken(refreshToken);
+authService.resetPassword(email);
+authService.updatePassword(accessToken, newPassword);
+authService.getUser(accessToken);
 ```
 
 ### ProfileService
@@ -998,9 +1041,9 @@ authService.getUser(accessToken)
 Manages user profile data with automatic Stripe customer creation.
 
 ```typescript
-profileService.getProfile(userId, accessToken)
-profileService.updateProfile(userId, data, accessToken)
-profileService.deleteProfile(userId, accessToken)
+profileService.getProfile(userId, accessToken);
+profileService.updateProfile(userId, data, accessToken);
+profileService.deleteProfile(userId, accessToken);
 ```
 
 ### MembershipService
@@ -1008,13 +1051,13 @@ profileService.deleteProfile(userId, accessToken)
 Handles membership tiers, features, and user memberships.
 
 ```typescript
-membershipService.getTiers(accessToken)
-membershipService.getTierFeatures(tierId, accessToken)
-membershipService.getUserMembership(userId, accessToken)
-membershipService.getUserTierWithFeatures(userId)
-membershipService.userHasFeature(userId, featureKey)
-membershipService.getFeatureLimit(userId, featureKey)
-membershipService.updateMembership(userId, data)
+membershipService.getTiers(accessToken);
+membershipService.getTierFeatures(tierId, accessToken);
+membershipService.getUserMembership(userId, accessToken);
+membershipService.getUserTierWithFeatures(userId);
+membershipService.userHasFeature(userId, featureKey);
+membershipService.getFeatureLimit(userId, featureKey);
+membershipService.updateMembership(userId, data);
 ```
 
 ### TrialService
@@ -1022,11 +1065,11 @@ membershipService.updateMembership(userId, data)
 Manages 14-day trial periods.
 
 ```typescript
-trialService.getTrialStatus(userId)
-trialService.canStartTrial(userId)
-trialService.startTrial(userId)
-trialService.expireTrials()
-trialService.convertTrialToPaid(userId, tierId, billingCycle)
+trialService.getTrialStatus(userId);
+trialService.canStartTrial(userId);
+trialService.startTrial(userId);
+trialService.expireTrials();
+trialService.convertTrialToPaid(userId, tierId, billingCycle);
 ```
 
 ### UsageService
@@ -1060,7 +1103,7 @@ stripeService.cancelSubscription(subscriptionId)
 Processes Stripe webhook events.
 
 ```typescript
-webhookService.handleEvent(event)
+webhookService.handleEvent(event);
 // Internally handles:
 // - checkout.session.completed
 // - customer.subscription.updated
@@ -1177,104 +1220,104 @@ throw new ApiError(403, 'Access denied', { reason: 'insufficient_permissions' })
 
 Extended user data linked to Supabase Auth.
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key, links to auth.users |
-| email | text | User email |
-| first_name | text | First name |
-| last_name | text | Last name |
-| full_name | text | Computed: first_name + last_name |
-| phone | text | Phone number |
-| company | text | Company name |
-| bio | text | User biography |
-| website | text | Personal website |
-| avatar_url | text | Profile picture URL |
-| stripe_customer_id | text | Stripe customer ID |
+| Column             | Type | Description                      |
+| ------------------ | ---- | -------------------------------- |
+| id                 | uuid | Primary key, links to auth.users |
+| email              | text | User email                       |
+| first_name         | text | First name                       |
+| last_name          | text | Last name                        |
+| full_name          | text | Computed: first_name + last_name |
+| phone              | text | Phone number                     |
+| company            | text | Company name                     |
+| bio                | text | User biography                   |
+| website            | text | Personal website                 |
+| avatar_url         | text | Profile picture URL              |
+| stripe_customer_id | text | Stripe customer ID               |
 
 ### membership_tiers
 
 Available subscription tiers.
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| name | text | Internal name (free, premium, pro) |
-| display_name | text | Display name |
-| description | text | Tier description |
-| price_monthly | decimal | Monthly price |
-| price_yearly | decimal | Yearly price |
-| stripe_monthly_price_id | text | Stripe price ID for monthly |
-| stripe_yearly_price_id | text | Stripe price ID for yearly |
-| is_active | boolean | Whether tier is available |
-| sort_order | integer | Display order |
+| Column                  | Type    | Description                        |
+| ----------------------- | ------- | ---------------------------------- |
+| id                      | uuid    | Primary key                        |
+| name                    | text    | Internal name (free, premium, pro) |
+| display_name            | text    | Display name                       |
+| description             | text    | Tier description                   |
+| price_monthly           | decimal | Monthly price                      |
+| price_yearly            | decimal | Yearly price                       |
+| stripe_monthly_price_id | text    | Stripe price ID for monthly        |
+| stripe_yearly_price_id  | text    | Stripe price ID for yearly         |
+| is_active               | boolean | Whether tier is available          |
+| sort_order              | integer | Display order                      |
 
 ### user_memberships
 
 User subscription status.
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| user_id | uuid | Foreign key to user_profiles |
-| tier_id | uuid | Foreign key to membership_tiers |
-| status | enum | active, cancelled, expired, trial, past_due |
-| billing_cycle | enum | monthly, yearly |
-| started_at | timestamp | Membership start date |
-| expires_at | timestamp | Membership expiration |
-| trial_starts_at | timestamp | Trial start (if applicable) |
-| trial_ends_at | timestamp | Trial end (if applicable) |
-| stripe_subscription_id | text | Stripe subscription ID |
+| Column                 | Type      | Description                                 |
+| ---------------------- | --------- | ------------------------------------------- |
+| id                     | uuid      | Primary key                                 |
+| user_id                | uuid      | Foreign key to user_profiles                |
+| tier_id                | uuid      | Foreign key to membership_tiers             |
+| status                 | enum      | active, cancelled, expired, trial, past_due |
+| billing_cycle          | enum      | monthly, yearly                             |
+| started_at             | timestamp | Membership start date                       |
+| expires_at             | timestamp | Membership expiration                       |
+| trial_starts_at        | timestamp | Trial start (if applicable)                 |
+| trial_ends_at          | timestamp | Trial end (if applicable)                   |
+| stripe_subscription_id | text      | Stripe subscription ID                      |
 
 ### features
 
 Feature definitions.
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| key | text | Unique feature key |
-| name | text | Display name |
-| description | text | Feature description |
+| Column       | Type | Description          |
+| ------------ | ---- | -------------------- |
+| id           | uuid | Primary key          |
+| key          | text | Unique feature key   |
+| name         | text | Display name         |
+| description  | text | Feature description  |
 | feature_type | enum | boolean, limit, enum |
 
 ### tier_features
 
 Feature assignments to tiers.
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| tier_id | uuid | Foreign key to membership_tiers |
-| feature_id | uuid | Foreign key to features |
-| value | text | Feature value (true, 10, "advanced") |
-| usage_limit | integer | Max usage (for limit types) |
-| period_type | enum | none, daily, monthly, lifetime |
+| Column      | Type    | Description                          |
+| ----------- | ------- | ------------------------------------ |
+| id          | uuid    | Primary key                          |
+| tier_id     | uuid    | Foreign key to membership_tiers      |
+| feature_id  | uuid    | Foreign key to features              |
+| value       | text    | Feature value (true, 10, "advanced") |
+| usage_limit | integer | Max usage (for limit types)          |
+| period_type | enum    | none, daily, monthly, lifetime       |
 
 ### usage_tracking
 
 User feature usage.
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| user_id | uuid | Foreign key to user_profiles |
-| feature_id | uuid | Foreign key to features |
-| current_usage | integer | Current usage count |
-| usage_limit | integer | Limit from tier_features |
-| period_type | enum | none, daily, monthly, lifetime |
-| period_start | timestamp | Current period start |
-| last_reset | timestamp | Last usage reset time |
+| Column        | Type      | Description                    |
+| ------------- | --------- | ------------------------------ |
+| id            | uuid      | Primary key                    |
+| user_id       | uuid      | Foreign key to user_profiles   |
+| feature_id    | uuid      | Foreign key to features        |
+| current_usage | integer   | Current usage count            |
+| usage_limit   | integer   | Limit from tier_features       |
+| period_type   | enum      | none, daily, monthly, lifetime |
+| period_start  | timestamp | Current period start           |
+| last_reset    | timestamp | Last usage reset time          |
 
 ### admin_users
 
 Admin role assignments.
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| user_id | uuid | Foreign key to user_profiles |
-| role | enum | admin, super_admin |
-| created_by | uuid | Who granted admin access |
+| Column     | Type | Description                  |
+| ---------- | ---- | ---------------------------- |
+| id         | uuid | Primary key                  |
+| user_id    | uuid | Foreign key to user_profiles |
+| role       | enum | admin, super_admin           |
+| created_by | uuid | Who granted admin access     |
 
 ---
 
@@ -1305,11 +1348,7 @@ const hasFeature = await membershipService.userHasFeature(userId, 'advanced_anal
 const limit = await membershipService.getFeatureLimit(userId, 'max_projects');
 
 // Using middleware
-router.get('/analytics',
-  authMiddleware,
-  requireFeature('advanced_analytics'),
-  handler
-);
+router.get('/analytics', authMiddleware, requireFeature('advanced_analytics'), handler);
 ```
 
 ### Adding New Features
@@ -1386,12 +1425,12 @@ This will:
 
 ### Period Types
 
-| Type | Description | Reset Behavior |
-|------|-------------|----------------|
-| `none` | No tracking | N/A |
-| `daily` | Resets every day | At midnight UTC |
-| `monthly` | Resets monthly | First of each month |
-| `lifetime` | Never resets | Counts forever |
+| Type       | Description      | Reset Behavior      |
+| ---------- | ---------------- | ------------------- |
+| `none`     | No tracking      | N/A                 |
+| `daily`    | Resets every day | At midnight UTC     |
+| `monthly`  | Resets monthly   | First of each month |
+| `lifetime` | Never resets     | Counts forever      |
 
 ### How Limits Work
 
@@ -1402,9 +1441,10 @@ This will:
 
 ```typescript
 // Middleware handles this automatically
-router.post('/action',
+router.post(
+  '/action',
   authMiddleware,
-  enforceLimit('api_calls'),  // Checks and increments
+  enforceLimit('api_calls'), // Checks and increments
   handler
 );
 ```
@@ -1480,10 +1520,10 @@ Required events:
 
 ### Test Cards
 
-| Card Number | Description |
-|-------------|-------------|
+| Card Number         | Description        |
+| ------------------- | ------------------ |
 | 4242 4242 4242 4242 | Successful payment |
-| 4000 0000 0000 9995 | Declined payment |
+| 4000 0000 0000 9995 | Declined payment   |
 | 4000 0025 0000 3155 | Requires 3D Secure |
 
 ---
@@ -1504,13 +1544,13 @@ Required events:
 
 ### Common Status Codes
 
-| Code | Meaning |
-|------|---------|
-| 400 | Bad Request - Invalid input/validation error |
-| 401 | Unauthorized - Missing or invalid token |
-| 403 | Forbidden - Insufficient permissions or quota |
-| 404 | Not Found - Resource doesn't exist |
-| 500 | Internal Server Error |
+| Code | Meaning                                       |
+| ---- | --------------------------------------------- |
+| 400  | Bad Request - Invalid input/validation error  |
+| 401  | Unauthorized - Missing or invalid token       |
+| 403  | Forbidden - Insufficient permissions or quota |
+| 404  | Not Found - Resource doesn't exist            |
+| 500  | Internal Server Error                         |
 
 ### Using ApiError
 
@@ -1523,7 +1563,7 @@ throw new ApiError(404, 'User not found');
 // With details (hidden in production)
 throw new ApiError(403, 'Access denied', {
   required_tier: 'premium',
-  current_tier: 'free'
+  current_tier: 'free',
 });
 ```
 
@@ -1598,16 +1638,16 @@ STRIPE_SECRET_KEY=sk_test_...
 
 When implementing Supabase authentication, avoid these common pitfalls:
 
-| Mistake | Why It's Bad | Solution |
-|---------|--------------|----------|
-| Using Service Role Key in frontend | Bypasses all RLS - exposes your entire database | Only use in backend, never expose to client |
-| Using `@supabase/auth-helpers` | Deprecated package | Use `@supabase/ssr` instead |
-| Creating new Supabase client per request | Memory leaks, poor performance | Use singleton clients, reuse instances |
-| Missing `/auth/callback` route | OAuth will redirect to nowhere | Add callback endpoint for OAuth providers |
-| Not adding localhost to redirect URLs | OAuth fails in development | Add `http://localhost:3001/api/auth/callback` in Supabase Dashboard |
-| Backend creating login cookies | Wrong architecture | Frontend creates cookies via Supabase client, backend only reads/refreshes |
-| Forgetting cookie-parser middleware | Cookies won't be parsed | Add `app.use(cookieParser())` before routes |
-| Not setting `credentials: true` in CORS | Cookies won't be sent cross-origin | Already configured in this project |
+| Mistake                                  | Why It's Bad                                    | Solution                                                                   |
+| ---------------------------------------- | ----------------------------------------------- | -------------------------------------------------------------------------- |
+| Using Service Role Key in frontend       | Bypasses all RLS - exposes your entire database | Only use in backend, never expose to client                                |
+| Using `@supabase/auth-helpers`           | Deprecated package                              | Use `@supabase/ssr` instead                                                |
+| Creating new Supabase client per request | Memory leaks, poor performance                  | Use singleton clients, reuse instances                                     |
+| Missing `/auth/callback` route           | OAuth will redirect to nowhere                  | Add callback endpoint for OAuth providers                                  |
+| Not adding localhost to redirect URLs    | OAuth fails in development                      | Add `http://localhost:3001/api/auth/callback` in Supabase Dashboard        |
+| Backend creating login cookies           | Wrong architecture                              | Frontend creates cookies via Supabase client, backend only reads/refreshes |
+| Forgetting cookie-parser middleware      | Cookies won't be parsed                         | Add `app.use(cookieParser())` before routes                                |
+| Not setting `credentials: true` in CORS  | Cookies won't be sent cross-origin              | Already configured in this project                                         |
 
 ---
 
