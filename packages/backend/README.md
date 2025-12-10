@@ -239,7 +239,7 @@ npm run build
 npm start
 ```
 
-The server starts at `http://localhost:3001` with Swagger docs at `/api-docs`.
+The server starts at `http://localhost:3001` with Swagger docs at `/api/docs`.
 
 ---
 
@@ -1703,3 +1703,5 @@ This will:
 - Check Supabase Dashboard logs for database errors
 - Check Stripe Dashboard for payment issues
 - Review server console for application errors
+
+# Test
