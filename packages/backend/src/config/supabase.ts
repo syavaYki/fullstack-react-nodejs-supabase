@@ -54,6 +54,7 @@ export function createSupabaseReqResClient(req: Request, res: Response) {
             secure: env.NODE_ENV === 'production',
             // httpOnly for auth cookies
             httpOnly: true,
+            sameSite: 'none',
             // SameSite=None required for cross-origin cookies (different subdomains)
             // Must be used with Secure=true
             sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
