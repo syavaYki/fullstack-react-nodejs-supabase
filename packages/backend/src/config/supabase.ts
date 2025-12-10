@@ -3,6 +3,25 @@ import { createServerClient, CookieOptions } from '@supabase/ssr';
 import { Request, Response } from 'express';
 import { env } from './env.js';
 
+/**
+ * Get the parent domain for cookie sharing across subdomains
+ * e.g., "https://project-template.podolskiy.dev" -> ".podolskiy.dev"
+ */
+function getParentDomain(): string {
+  try {
+    const url = new URL(env.FRONTEND_URL);
+    const parts = url.hostname.split('.');
+    if (parts.length >= 2) {
+      return '.' + parts.slice(-2).join('.');
+    }
+    return url.hostname;
+  } catch {
+    return '';
+  }
+}
+
+const cookieDomain = getParentDomain();
+
 // Client for user-context operations (uses anon key, respects RLS)
 export const supabaseClient: SupabaseClient = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
 
@@ -50,14 +69,14 @@ export function createSupabaseReqResClient(req: Request, res: Response) {
         cookies.forEach(({ name, value, options }) => {
           res.cookie(name, value, {
             ...options,
+            // Set domain for cross-subdomain cookie sharing
+            domain: cookieDomain,
             // Ensure secure cookies in production
             secure: env.NODE_ENV === 'production',
             // httpOnly for auth cookies
             httpOnly: true,
+            // SameSite=None required for cross-origin cookies
             sameSite: 'none',
-            // SameSite=None required for cross-origin cookies (different subdomains)
-            // Must be used with Secure=true
-            // sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
           });
         });
       },

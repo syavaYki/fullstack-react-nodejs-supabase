@@ -4,7 +4,7 @@
  */
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import type { User, Session } from '@supabase/supabase-js';
+import type { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
 import {
   getSupabaseBrowserClient,
   signIn as supabaseSignIn,
@@ -49,21 +49,23 @@ export function AuthProvider({ children, initialSession }: AuthProviderProps) {
     const supabase = getSupabaseBrowserClient();
 
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setIsLoading(false);
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }: { data: { session: Session | null } }) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setIsLoading(false);
 
-      // Check admin status if logged in
-      if (session?.user) {
-        checkAdminStatus();
-      }
-    });
+        // Check admin status if logged in
+        if (session?.user) {
+          checkAdminStatus();
+        }
+      });
 
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
       setSession(session);
       setUser(session?.user ?? null);
 

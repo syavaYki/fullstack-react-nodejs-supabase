@@ -8,6 +8,20 @@ import { createBrowserClient } from '@supabase/ssr';
 let supabaseClient: ReturnType<typeof createBrowserClient> | null = null;
 
 /**
+ * Get the parent domain for cookie sharing across subdomains
+ * e.g., "project-template.podolskiy.dev" -> ".podolskiy.dev"
+ */
+function getParentDomain(): string {
+  if (typeof window === 'undefined') return '';
+  const parts = window.location.hostname.split('.');
+  if (parts.length >= 2) {
+    // Return parent domain with leading dot for subdomain sharing
+    return '.' + parts.slice(-2).join('.');
+  }
+  return window.location.hostname;
+}
+
+/**
  * Creates or returns a singleton Supabase client for browser use
  */
 export function getSupabaseBrowserClient() {
@@ -15,9 +29,18 @@ export function getSupabaseBrowserClient() {
     return supabaseClient;
   }
 
+  const parentDomain = getParentDomain();
+
   supabaseClient = createBrowserClient(
     import.meta.env.VITE_SUPABASE_URL,
-    import.meta.env.VITE_SUPABASE_ANON_KEY
+    import.meta.env.VITE_SUPABASE_ANON_KEY,
+    {
+      cookieOptions: {
+        domain: parentDomain,
+        sameSite: 'none',
+        secure: true,
+      },
+    }
   );
 
   return supabaseClient;
