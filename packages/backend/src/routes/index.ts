@@ -6,7 +6,6 @@ import billingRoutes from './billing.routes.js';
 import adminRoutes from './admin.routes.js';
 import contactRoutes from './contact.routes.js';
 import testRoutes from './test.routes.js';
-import { env } from '../config/env.js';
 
 const router = Router();
 
@@ -18,10 +17,8 @@ router.use('/billing', billingRoutes);
 router.use('/admin', adminRoutes);
 router.use('/contact', contactRoutes);
 
-// Test routes only available in development/test environments
-if (env.NODE_ENV !== 'production') {
-  router.use('/test', testRoutes);
-}
+// Test routes for tier/feature testing
+router.use('/test', testRoutes);
 
 // Health check
 router.get('/health', (_req, res) => {
