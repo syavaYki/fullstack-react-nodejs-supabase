@@ -4,10 +4,7 @@ import { Request, Response } from 'express';
 import { env } from './env.js';
 
 // Client for user-context operations (uses anon key, respects RLS)
-export const supabaseClient: SupabaseClient = createClient(
-  env.SUPABASE_URL,
-  env.SUPABASE_ANON_KEY
-);
+export const supabaseClient: SupabaseClient = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
 
 // Admin client for server-side operations (bypasses RLS)
 export const supabaseAdmin: SupabaseClient = createClient(
@@ -57,8 +54,9 @@ export function createSupabaseReqResClient(req: Request, res: Response) {
             secure: env.NODE_ENV === 'production',
             // httpOnly for auth cookies
             httpOnly: true,
-            // SameSite for CSRF protection
-            sameSite: 'lax',
+            // SameSite=None required for cross-origin cookies (different subdomains)
+            // Must be used with Secure=true
+            sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
           });
         });
       },
