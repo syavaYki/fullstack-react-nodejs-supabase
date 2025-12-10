@@ -5,6 +5,7 @@ import membershipRoutes from './membership.routes.js';
 import billingRoutes from './billing.routes.js';
 import adminRoutes from './admin.routes.js';
 import contactRoutes from './contact.routes.js';
+import testRoutes from './test.routes.js';
 import { env } from '../config/env.js';
 
 const router = Router();
@@ -19,10 +20,7 @@ router.use('/contact', contactRoutes);
 
 // Test routes only available in development/test environments
 if (env.NODE_ENV !== 'production') {
-  // Dynamic import to avoid loading test routes in production
-  import('./test.routes.js').then((testRoutes) => {
-    router.use('/test', testRoutes.default);
-  });
+  router.use('/test', testRoutes);
 }
 
 // Health check
