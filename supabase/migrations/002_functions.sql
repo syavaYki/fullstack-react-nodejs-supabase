@@ -9,12 +9,15 @@
 
 -- Auto-update updated_at timestamp
 CREATE OR REPLACE FUNCTION public.handle_updated_at()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path = ''
+AS $$
 BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- ============================================
 -- TRIGGERS - Updated At
@@ -43,7 +46,11 @@ CREATE TRIGGER on_usage_tracking_updated
 -- MEMBERSHIP AUDIT LOGGING
 -- ============================================
 CREATE OR REPLACE FUNCTION public.log_membership_change()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
 BEGIN
     IF TG_OP = 'UPDATE' THEN
         IF OLD.tier_id != NEW.tier_id OR OLD.status != NEW.status THEN
@@ -69,7 +76,7 @@ BEGIN
     END IF;
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 CREATE TRIGGER on_membership_changed
     AFTER UPDATE ON public.memberships
@@ -80,7 +87,11 @@ CREATE TRIGGER on_membership_changed
 -- AUTO-CREATE PROFILE & MEMBERSHIP ON SIGNUP
 -- ============================================
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
 DECLARE
     default_tier_id UUID;
 BEGIN
@@ -100,7 +111,7 @@ BEGIN
 
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
@@ -117,10 +128,14 @@ RETURNS TABLE (
     tier_id UUID,
     tier_name TEXT,
     tier_display_name TEXT,
-    membership_status membership_status,
+    membership_status public.membership_status,
     trial_ends_at TIMESTAMPTZ,
     features JSONB
-) AS $$
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
 BEGIN
     RETURN QUERY
     SELECT
@@ -140,11 +155,15 @@ BEGIN
     WHERE m.user_id = p_user_id
     GROUP BY mt.id, mt.name, mt.display_name, m.status, m.trial_ends_at;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- Check if user has a specific feature (boolean)
 CREATE OR REPLACE FUNCTION public.user_has_feature(p_user_id UUID, p_feature_key TEXT)
-RETURNS BOOLEAN AS $$
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
 DECLARE
     feature_val JSONB;
 BEGIN
@@ -168,11 +187,15 @@ BEGIN
 
     RETURN TRUE;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- Get feature limit value for user
 CREATE OR REPLACE FUNCTION public.get_feature_limit(p_user_id UUID, p_feature_key TEXT)
-RETURNS INTEGER AS $$
+RETURNS INTEGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
 DECLARE
     feature_val JSONB;
 BEGIN
@@ -192,7 +215,7 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN
     RETURN 0;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- Get all features for a tier
 CREATE OR REPLACE FUNCTION public.get_tier_features(p_tier_id UUID)
@@ -201,7 +224,11 @@ RETURNS TABLE (
     feature_name TEXT,
     feature_type TEXT,
     value JSONB
-) AS $$
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
 BEGIN
     RETURN QUERY
     SELECT
@@ -214,14 +241,14 @@ BEGIN
     WHERE tf.tier_id = p_tier_id
     ORDER BY f.name;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- ============================================
 -- ATOMIC USAGE TRACKING FUNCTIONS
 -- ============================================
 
 -- Atomically increment usage for a feature
-CREATE OR REPLACE FUNCTION increment_usage(
+CREATE OR REPLACE FUNCTION public.increment_usage(
     p_user_id UUID,
     p_feature_key TEXT,
     p_amount INTEGER DEFAULT 1
@@ -237,10 +264,13 @@ RETURNS TABLE (
     period_end TIMESTAMPTZ,
     last_used_at TIMESTAMPTZ,
     is_exceeded BOOLEAN
-) AS $$
+)
+LANGUAGE plpgsql
+SET search_path = ''
+AS $$
 BEGIN
     RETURN QUERY
-    UPDATE usage_tracking ut
+    UPDATE public.usage_tracking ut
     SET
         current_usage = ut.current_usage + p_amount,
         last_used_at = NOW()
@@ -261,10 +291,10 @@ BEGIN
             ELSE ut.current_usage > ut.usage_limit
         END as is_exceeded;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- Atomically reset usage period if expired
-CREATE OR REPLACE FUNCTION reset_usage_if_expired(
+CREATE OR REPLACE FUNCTION public.reset_usage_if_expired(
     p_user_id UUID,
     p_feature_key TEXT
 )
@@ -272,14 +302,17 @@ RETURNS TABLE (
     was_reset BOOLEAN,
     current_usage INTEGER,
     period_end TIMESTAMPTZ
-) AS $$
+)
+LANGUAGE plpgsql
+SET search_path = ''
+AS $$
 DECLARE
-    v_record usage_tracking%ROWTYPE;
+    v_record public.usage_tracking%ROWTYPE;
     v_new_period_end TIMESTAMPTZ;
 BEGIN
     SELECT * INTO v_record
-    FROM usage_tracking
-    WHERE user_id = p_user_id AND feature_key = p_feature_key
+    FROM public.usage_tracking
+    WHERE public.usage_tracking.user_id = p_user_id AND public.usage_tracking.feature_key = p_feature_key
     FOR UPDATE;
 
     IF NOT FOUND THEN
@@ -302,19 +335,19 @@ BEGIN
         v_new_period_end := v_record.period_end;
     END IF;
 
-    UPDATE usage_tracking
+    UPDATE public.usage_tracking
     SET
         current_usage = 0,
         period_start = NOW(),
         period_end = v_new_period_end
-    WHERE id = v_record.id;
+    WHERE public.usage_tracking.id = v_record.id;
 
     RETURN QUERY SELECT TRUE, 0, v_new_period_end;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- Combined atomic operation: check period, reset if needed, then increment
-CREATE OR REPLACE FUNCTION check_reset_and_increment_usage(
+CREATE OR REPLACE FUNCTION public.check_reset_and_increment_usage(
     p_user_id UUID,
     p_feature_key TEXT,
     p_amount INTEGER DEFAULT 1
@@ -326,16 +359,19 @@ RETURNS TABLE (
     remaining INTEGER,
     is_exceeded BOOLEAN,
     was_period_reset BOOLEAN
-) AS $$
+)
+LANGUAGE plpgsql
+SET search_path = ''
+AS $$
 DECLARE
-    v_record usage_tracking%ROWTYPE;
+    v_record public.usage_tracking%ROWTYPE;
     v_new_period_end TIMESTAMPTZ;
     v_was_reset BOOLEAN := FALSE;
     v_new_usage INTEGER;
 BEGIN
     SELECT * INTO v_record
-    FROM usage_tracking
-    WHERE user_id = p_user_id AND feature_key = p_feature_key
+    FROM public.usage_tracking
+    WHERE public.usage_tracking.user_id = p_user_id AND public.usage_tracking.feature_key = p_feature_key
     FOR UPDATE;
 
     IF NOT FOUND THEN
@@ -352,23 +388,23 @@ BEGIN
             v_new_period_end := DATE_TRUNC('month', NOW()) + INTERVAL '1 month' - INTERVAL '1 millisecond';
         END IF;
 
-        UPDATE usage_tracking
+        UPDATE public.usage_tracking
         SET
             current_usage = p_amount,
             period_start = NOW(),
             period_end = v_new_period_end,
             last_used_at = NOW()
-        WHERE id = v_record.id
-        RETURNING current_usage INTO v_new_usage;
+        WHERE public.usage_tracking.id = v_record.id
+        RETURNING public.usage_tracking.current_usage INTO v_new_usage;
 
         v_was_reset := TRUE;
     ELSE
-        UPDATE usage_tracking
+        UPDATE public.usage_tracking
         SET
-            current_usage = current_usage + p_amount,
+            current_usage = public.usage_tracking.current_usage + p_amount,
             last_used_at = NOW()
-        WHERE id = v_record.id
-        RETURNING current_usage INTO v_new_usage;
+        WHERE public.usage_tracking.id = v_record.id
+        RETURNING public.usage_tracking.current_usage INTO v_new_usage;
     END IF;
 
     RETURN QUERY SELECT
@@ -385,10 +421,10 @@ BEGIN
         END,
         v_was_reset;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- Atomically change a user's tier
-CREATE OR REPLACE FUNCTION change_user_tier(
+CREATE OR REPLACE FUNCTION public.change_user_tier(
     p_user_id UUID,
     p_tier_id UUID,
     p_billing_cycle TEXT DEFAULT 'monthly'
@@ -398,14 +434,17 @@ RETURNS TABLE (
     membership_id UUID,
     tier_name TEXT,
     error_message TEXT
-) AS $$
+)
+LANGUAGE plpgsql
+SET search_path = ''
+AS $$
 DECLARE
-    v_tier membership_tiers%ROWTYPE;
+    v_tier public.membership_tiers%ROWTYPE;
     v_membership_id UUID;
 BEGIN
     SELECT * INTO v_tier
-    FROM membership_tiers
-    WHERE id = p_tier_id
+    FROM public.membership_tiers
+    WHERE public.membership_tiers.id = p_tier_id
     FOR SHARE;
 
     IF NOT FOUND THEN
@@ -418,11 +457,11 @@ BEGIN
         RETURN;
     END IF;
 
-    UPDATE memberships
+    UPDATE public.memberships
     SET
         tier_id = p_tier_id,
         status = 'active',
-        billing_cycle = p_billing_cycle::billing_cycle,
+        billing_cycle = p_billing_cycle::public.billing_cycle,
         started_at = NOW(),
         stripe_subscription_id = NULL,
         stripe_price_id = NULL,
@@ -431,8 +470,8 @@ BEGIN
         trial_starts_at = NULL,
         trial_ends_at = NULL,
         updated_at = NOW()
-    WHERE user_id = p_user_id
-    RETURNING id INTO v_membership_id;
+    WHERE public.memberships.user_id = p_user_id
+    RETURNING public.memberships.id INTO v_membership_id;
 
     IF v_membership_id IS NULL THEN
         RETURN QUERY SELECT FALSE, NULL::UUID, NULL::TEXT, 'Membership not found'::TEXT;
@@ -441,7 +480,7 @@ BEGIN
 
     RETURN QUERY SELECT TRUE, v_membership_id, v_tier.name, NULL::TEXT;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- ============================================
 -- FUNCTION PERMISSIONS
