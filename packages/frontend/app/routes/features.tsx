@@ -13,7 +13,8 @@ import {
   Chip,
   Alert,
 } from '@mui/material';
-import { Link, useLoaderData } from 'react-router';
+import { useLoaderData } from 'react-router';
+import { RouterLink } from '~/utils';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import { getPublicTiersWithFeatures } from '../api/membership.api';
@@ -57,7 +58,7 @@ export default function FeaturesPage() {
         <Alert severity="error" sx={{ mb: 4 }}>
           No features available
         </Alert>
-        <Button component={Link} to="/pricing" variant="contained">
+        <Button component={RouterLink} to="/pricing" variant="contained">
           View Pricing
         </Button>
       </Container>
@@ -233,10 +234,10 @@ export default function FeaturesPage() {
               flexWrap: 'wrap',
             }}
           >
-            <Button component={Link} to="/pricing" variant="contained" size="large">
+            <Button component={RouterLink} to="/pricing" variant="contained" size="large">
               View Pricing
             </Button>
-            <Button component={Link} to="/auth/register" variant="outlined" size="large">
+            <Button component={RouterLink} to="/auth/register" variant="outlined" size="large">
               Get Started Free
             </Button>
           </Box>

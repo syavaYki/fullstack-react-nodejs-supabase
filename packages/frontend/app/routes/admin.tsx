@@ -1,5 +1,6 @@
 import type { Route } from './+types/admin';
-import { Outlet, Link, useLocation, redirect } from 'react-router';
+import { Outlet, useLocation, redirect } from 'react-router';
+import { RouterLink } from '~/utils';
 import {
   Box,
   Container,
@@ -80,7 +81,7 @@ export default function AdminLayout() {
             {adminNavItems.map((item) => (
               <ListItem key={item.path} disablePadding>
                 <ListItemButton
-                  component={Link}
+                  component={RouterLink}
                   to={item.path}
                   selected={location.pathname === item.path}
                 >

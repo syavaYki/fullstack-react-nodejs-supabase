@@ -11,4 +11,4 @@ export { getInitials, getDisplayName } from './user';
 export { getPaymentStatusColor, getPaymentStatusLabel } from './status';
 
 // Navigation helpers
-export { isActivePath } from './navigation';
+export { isActivePath, RouterLink, MuiLink } from './navigation';

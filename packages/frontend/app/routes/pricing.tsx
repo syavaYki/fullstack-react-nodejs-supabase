@@ -19,7 +19,8 @@ import {
   CircularProgress,
   Alert,
 } from '@mui/material';
-import { Link, useLoaderData } from 'react-router';
+import { useLoaderData } from 'react-router';
+import { RouterLink } from '~/utils';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import { useAuth } from '~/contexts';
@@ -242,7 +243,7 @@ export default function PricingPage() {
                 </CardContent>
                 <CardActions sx={{ p: 4, pt: 0 }}>
                   <Button
-                    component={ctaProps.disabled ? 'button' : Link}
+                    component={ctaProps.disabled ? 'button' : RouterLink}
                     to={ctaProps.disabled ? undefined : ctaProps.to}
                     variant={ctaProps.variant}
                     size="large"
@@ -261,7 +262,7 @@ export default function PricingPage() {
 
       {/* Features link */}
       <Box sx={{ textAlign: 'center', mt: 6 }}>
-        <Button component={Link} to="/features" variant="text" size="large">
+        <Button component={RouterLink} to="/features" variant="text" size="large">
           Compare all features in detail
         </Button>
       </Box>

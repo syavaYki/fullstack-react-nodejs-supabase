@@ -9,7 +9,7 @@ import {
   CardContent,
   Stack,
 } from '@mui/material';
-import { Link } from 'react-router';
+import { RouterLink } from '~/utils';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import SecurityIcon from '@mui/icons-material/Security';
 import SpeedIcon from '@mui/icons-material/Speed';
@@ -82,7 +82,7 @@ export default function HomePage() {
                 </Typography>
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                   <Button
-                    component={Link}
+                    component={RouterLink}
                     to="/auth/register"
                     variant="contained"
                     size="large"
@@ -95,7 +95,7 @@ export default function HomePage() {
                     Get Started Free
                   </Button>
                   <Button
-                    component={Link}
+                    component={RouterLink}
                     to="/pricing"
                     variant="outlined"
                     size="large"
@@ -195,10 +195,10 @@ export default function HomePage() {
             Start building your SaaS product today with our free tier.
           </Typography>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="center">
-            <Button component={Link} to="/auth/register" variant="contained" size="large">
+            <Button component={RouterLink} to="/auth/register" variant="contained" size="large">
               Start Free Trial
             </Button>
-            <Button component={Link} to="/contact" variant="outlined" size="large">
+            <Button component={RouterLink} to="/contact" variant="outlined" size="large">
               Contact Sales
             </Button>
           </Stack>

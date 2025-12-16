@@ -14,7 +14,8 @@ import {
   Alert,
   CircularProgress,
 } from '@mui/material';
-import { Link, useNavigate, useSearchParams } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
+import { RouterLink } from '~/utils';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import { useAuth } from '~/contexts';
 
@@ -67,7 +68,7 @@ export default function LoginPage() {
       <Container maxWidth="sm">
         <Box sx={{ textAlign: 'center', mb: 4 }}>
           <Box
-            component={Link}
+            component={RouterLink}
             to="/"
             sx={{
               display: 'inline-flex',
@@ -123,7 +124,7 @@ export default function LoginPage() {
                 />
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                   <MuiLink
-                    component={Link}
+                    component={RouterLink}
                     to="/auth/forgot-password"
                     variant="body2"
                     sx={{ textDecoration: 'none' }}
@@ -153,7 +154,7 @@ export default function LoginPage() {
             <Typography variant="body2" textAlign="center">
               Don't have an account?{' '}
               <MuiLink
-                component={Link}
+                component={RouterLink}
                 to="/auth/register"
                 sx={{ textDecoration: 'none', fontWeight: 500 }}
               >

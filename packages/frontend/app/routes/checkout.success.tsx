@@ -1,6 +1,6 @@
 import type { Route } from './+types/checkout.success';
 import { Box, Container, Typography, Card, CardContent, Button, Stack } from '@mui/material';
-import { Link } from 'react-router';
+import { RouterLink } from '~/utils';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 export function meta({}: Route.MetaArgs) {
@@ -29,10 +29,10 @@ export default function CheckoutSuccessPage() {
               to all features.
             </Typography>
             <Stack spacing={2}>
-              <Button component={Link} to="/dashboard" variant="contained" size="large">
+              <Button component={RouterLink} to="/dashboard" variant="contained" size="large">
                 Go to Dashboard
               </Button>
-              <Button component={Link} to="/dashboard/membership" variant="outlined">
+              <Button component={RouterLink} to="/dashboard/membership" variant="outlined">
                 View Membership
               </Button>
             </Stack>

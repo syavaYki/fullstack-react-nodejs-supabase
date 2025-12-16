@@ -16,7 +16,8 @@ import {
   Alert,
   CircularProgress,
 } from '@mui/material';
-import { Link, useLoaderData } from 'react-router';
+import { useLoaderData } from 'react-router';
+import { RouterLink } from '~/utils';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import * as membershipApi from '~/api/membership.api';
@@ -268,7 +269,7 @@ export default function MembershipPage() {
                 </Typography>
               )}
               <Button
-                component={Link}
+                component={RouterLink}
                 to="/dashboard/billing"
                 variant="outlined"
                 fullWidth
@@ -321,7 +322,7 @@ export default function MembershipPage() {
                     View full feature comparison on our pricing page.
                   </Typography>
                   <Button
-                    component={Link}
+                    component={RouterLink}
                     to={`/checkout?tier=${tier.id}&cycle=monthly`}
                     variant="contained"
                     fullWidth
@@ -380,7 +381,7 @@ export default function MembershipPage() {
                   {trialStatus.days_remaining !== 1 ? 's' : ''} remaining. Trial ends{' '}
                   {formatDate(trialStatus.trial_ends_at)}.
                 </Typography>
-                <Button component={Link} to="/pricing" variant="contained" size="small">
+                <Button component={RouterLink} to="/pricing" variant="contained" size="small">
                   Upgrade Now
                 </Button>
               </>
@@ -416,7 +417,7 @@ export default function MembershipPage() {
 
       {/* All Plans Link */}
       <Box sx={{ mt: 4, textAlign: 'center' }}>
-        <Button component={Link} to="/pricing" variant="text">
+        <Button component={RouterLink} to="/pricing" variant="text">
           View all plans and pricing
         </Button>
       </Box>

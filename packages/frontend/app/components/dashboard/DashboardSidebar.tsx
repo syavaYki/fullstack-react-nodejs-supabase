@@ -1,4 +1,3 @@
-import { Link } from 'react-router';
 import {
   Box,
   Drawer,
@@ -13,6 +12,7 @@ import {
   useTheme,
   useMediaQuery,
 } from '@mui/material';
+import { RouterLink } from '~/utils';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import HomeIcon from '@mui/icons-material/Home';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -37,7 +37,7 @@ export function DashboardSidebar({
       {/* Logo */}
       <Toolbar>
         <Box
-          component={Link}
+          component={RouterLink}
           to="/"
           sx={{
             display: 'flex',
@@ -60,7 +60,7 @@ export function DashboardSidebar({
         {menuItems.map((item) => (
           <ListItem key={item.label} disablePadding>
             <ListItemButton
-              component={Link}
+              component={RouterLink}
               to={item.path}
               selected={isActive(item.path)}
               onClick={() => isMobile && onMobileClose()}
@@ -92,7 +92,7 @@ export function DashboardSidebar({
       {/* Secondary Navigation */}
       <List>
         <ListItem disablePadding>
-          <ListItemButton component={Link} to="/">
+          <ListItemButton component={RouterLink} to="/">
             <ListItemIcon>
               <HomeIcon />
             </ListItemIcon>
@@ -100,7 +100,7 @@ export function DashboardSidebar({
           </ListItemButton>
         </ListItem>
         <ListItem disablePadding>
-          <ListItemButton component={Link} to="/auth/logout">
+          <ListItemButton component={RouterLink} to="/auth/logout">
             <ListItemIcon>
               <LogoutIcon />
             </ListItemIcon>

@@ -19,7 +19,8 @@ import {
   DialogActions,
   Skeleton,
 } from '@mui/material';
-import { useNavigate, useLoaderData, useFetcher, Link } from 'react-router';
+import { useNavigate, useLoaderData, useFetcher } from 'react-router';
+import { RouterLink } from '~/utils';
 import { useAuth } from '~/contexts';
 import * as profileApi from '~/api/profile.api';
 import type { UserProfile, UpdateProfileInput } from '~/types';
@@ -317,7 +318,12 @@ export default function ProfilePage() {
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                   Manage your account security settings
                 </Typography>
-                <Button component={Link} to="/auth/change-password" variant="outlined" fullWidth>
+                <Button
+                  component={RouterLink}
+                  to="/auth/change-password"
+                  variant="outlined"
+                  fullWidth
+                >
                   Change Password
                 </Button>
               </CardContent>

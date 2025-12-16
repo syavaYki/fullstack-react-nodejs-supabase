@@ -12,7 +12,8 @@ import {
   Alert,
   CircularProgress,
 } from '@mui/material';
-import { Link, useSearchParams, useNavigate } from 'react-router';
+import { useSearchParams, useNavigate } from 'react-router';
+import { RouterLink } from '~/utils';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import { updatePassword } from '~/lib/supabase.client';
 
@@ -84,7 +85,7 @@ export default function ResetPasswordPage() {
       <Container maxWidth="sm">
         <Box sx={{ textAlign: 'center', mb: 4 }}>
           <Box
-            component={Link}
+            component={RouterLink}
             to="/"
             sx={{
               display: 'inline-flex',
@@ -118,7 +119,7 @@ export default function ResetPasswordPage() {
                   Please request a new password reset link.
                 </Typography>
                 <Button
-                  component={Link}
+                  component={RouterLink}
                   to="/auth/forgot-password"
                   variant="contained"
                   size="large"

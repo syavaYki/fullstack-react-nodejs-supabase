@@ -15,7 +15,8 @@ import {
   Alert,
   CircularProgress,
 } from '@mui/material';
-import { Link, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
+import { RouterLink } from '~/utils';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import { useAuth } from '~/contexts';
 
@@ -93,7 +94,7 @@ export default function RegisterPage() {
               <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
                 Please check your email to verify your account.
               </Typography>
-              <Button component={Link} to="/auth/login" variant="contained">
+              <Button component={RouterLink} to="/auth/login" variant="contained">
                 Go to Login
               </Button>
             </CardContent>
@@ -116,7 +117,7 @@ export default function RegisterPage() {
       <Container maxWidth="sm">
         <Box sx={{ textAlign: 'center', mb: 4 }}>
           <Box
-            component={Link}
+            component={RouterLink}
             to="/"
             sx={{
               display: 'inline-flex',
@@ -241,7 +242,7 @@ export default function RegisterPage() {
             <Typography variant="body2" textAlign="center">
               Already have an account?{' '}
               <MuiLink
-                component={Link}
+                component={RouterLink}
                 to="/auth/login"
                 sx={{ textDecoration: 'none', fontWeight: 500 }}
               >

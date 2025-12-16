@@ -13,7 +13,7 @@ import {
   Alert,
   CircularProgress,
 } from '@mui/material';
-import { Link } from 'react-router';
+import { RouterLink } from '~/utils';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { resetPassword } from '~/lib/supabase.client';
@@ -66,7 +66,7 @@ export default function ForgotPasswordPage() {
               <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
                 We've sent a password reset link to <strong>{email}</strong>
               </Typography>
-              <Button component={Link} to="/auth/login" variant="contained">
+              <Button component={RouterLink} to="/auth/login" variant="contained">
                 Back to Login
               </Button>
             </CardContent>
@@ -89,7 +89,7 @@ export default function ForgotPasswordPage() {
       <Container maxWidth="sm">
         <Box sx={{ textAlign: 'center', mb: 4 }}>
           <Box
-            component={Link}
+            component={RouterLink}
             to="/"
             sx={{
               display: 'inline-flex',
@@ -148,7 +148,7 @@ export default function ForgotPasswordPage() {
 
             <Box sx={{ mt: 3, textAlign: 'center' }}>
               <MuiLink
-                component={Link}
+                component={RouterLink}
                 to="/auth/login"
                 sx={{
                   display: 'inline-flex',

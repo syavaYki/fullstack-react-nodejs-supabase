@@ -26,23 +26,26 @@ export default [
     ]),
   ]),
 
-  // Dashboard routes (protected, custom layout with sidebar)
-  layout('routes/dashboard.tsx', [
-    route('dashboard', 'routes/dashboard._index.tsx'),
-    route('dashboard/profile', 'routes/dashboard.profile.tsx'),
-    route('dashboard/membership', 'routes/dashboard.membership.tsx'),
-    route('dashboard/usage', 'routes/dashboard.usage.tsx'),
-    route('dashboard/billing', 'routes/dashboard.billing.tsx'),
-  ]),
+  // Protected routes (authentication required)
+  layout('routes/_protected.tsx', [
+    // Dashboard (has its own sidebar layout)
+    layout('routes/dashboard.tsx', [
+      route('dashboard', 'routes/dashboard._index.tsx'),
+      route('dashboard/profile', 'routes/dashboard.profile.tsx'),
+      route('dashboard/membership', 'routes/dashboard.membership.tsx'),
+      route('dashboard/usage', 'routes/dashboard.usage.tsx'),
+      route('dashboard/billing', 'routes/dashboard.billing.tsx'),
+    ]),
 
-  // Admin routes (protected)
-  layout('routes/admin.tsx', [
-    route('admin', 'routes/admin._index.tsx'),
-    route('admin/tiers', 'routes/admin.tiers.tsx'),
-    route('admin/features', 'routes/admin.features.tsx'),
-    route('admin/users', 'routes/admin.users.tsx'),
-  ]),
+    // Test routes (for testing tier access)
+    layout('routes/test.tsx', [route('test', 'routes/test._index.tsx')]),
 
-  // Test routes (protected, for testing tier access)
-  layout('routes/test.tsx', [route('test', 'routes/test._index.tsx')]),
+    // Admin routes
+    layout('routes/admin.tsx', [
+      route('admin', 'routes/admin._index.tsx'),
+      route('admin/tiers', 'routes/admin.tiers.tsx'),
+      route('admin/features', 'routes/admin.features.tsx'),
+      route('admin/users', 'routes/admin.users.tsx'),
+    ]),
+  ]),
 ] satisfies RouteConfig;

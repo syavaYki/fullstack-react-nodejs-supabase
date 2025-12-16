@@ -1,4 +1,3 @@
-import { Link } from 'react-router';
 import {
   Box,
   Button,
@@ -10,6 +9,7 @@ import {
   ListItemIcon,
   Typography,
 } from '@mui/material';
+import { RouterLink } from '~/utils';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -64,26 +64,26 @@ export function UserMenu({
           </Typography>
         </MenuItem>
         <Divider />
-        <MenuItem component={Link} to="/dashboard">
+        <MenuItem component={RouterLink} to="/dashboard">
           <ListItemIcon>
             <DashboardIcon fontSize="small" />
           </ListItemIcon>
           Dashboard
         </MenuItem>
-        <MenuItem component={Link} to="/dashboard/profile">
+        <MenuItem component={RouterLink} to="/dashboard/profile">
           <ListItemIcon>
             <AccountCircleIcon fontSize="small" />
           </ListItemIcon>
           Profile
         </MenuItem>
-        <MenuItem component={Link} to="/dashboard/membership">
+        <MenuItem component={RouterLink} to="/dashboard/membership">
           <ListItemIcon>
             <SettingsIcon fontSize="small" />
           </ListItemIcon>
           Membership
         </MenuItem>
         {isAdmin && (
-          <MenuItem component={Link} to="/admin">
+          <MenuItem component={RouterLink} to="/admin">
             <ListItemIcon>
               <AdminPanelSettingsIcon fontSize="small" />
             </ListItemIcon>
@@ -91,7 +91,7 @@ export function UserMenu({
           </MenuItem>
         )}
         <Divider />
-        <MenuItem component={Link} to="/auth/logout">
+        <MenuItem component={RouterLink} to="/auth/logout">
           <ListItemIcon>
             <LogoutIcon fontSize="small" />
           </ListItemIcon>
@@ -115,10 +115,10 @@ export function AuthButtons() {
         gap: 1,
       }}
     >
-      <Button component={Link} to="/auth/login" color="inherit">
+      <Button component={RouterLink} to="/auth/login" color="inherit">
         Login
       </Button>
-      <Button component={Link} to="/auth/register" variant="contained">
+      <Button component={RouterLink} to="/auth/register" variant="contained">
         Get Started
       </Button>
     </Box>

@@ -1,6 +1,6 @@
 import type { Route } from './+types/checkout.cancel';
 import { Box, Container, Typography, Card, CardContent, Button, Stack } from '@mui/material';
-import { Link } from 'react-router';
+import { RouterLink } from '~/utils';
 import CancelIcon from '@mui/icons-material/Cancel';
 
 export function meta({}: Route.MetaArgs) {
@@ -29,10 +29,10 @@ export default function CheckoutCancelPage() {
               explore our free tier.
             </Typography>
             <Stack spacing={2}>
-              <Button component={Link} to="/pricing" variant="contained" size="large">
+              <Button component={RouterLink} to="/pricing" variant="contained" size="large">
                 Return to Pricing
               </Button>
-              <Button component={Link} to="/dashboard" variant="outlined">
+              <Button component={RouterLink} to="/dashboard" variant="outlined">
                 Go to Dashboard
               </Button>
             </Stack>

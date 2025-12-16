@@ -65,6 +65,9 @@ type Pages = {
   "/dashboard/billing": {
     params: {};
   };
+  "/test": {
+    params: {};
+  };
   "/admin": {
     params: {};
   };
@@ -77,15 +80,12 @@ type Pages = {
   "/admin/users": {
     params: {};
   };
-  "/test": {
-    params: {};
-  };
 };
 
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/pricing" | "/contact" | "/features" | "/auth/login" | "/auth/register" | "/auth/logout" | "/auth/forgot-password" | "/auth/reset-password" | "/auth/change-password" | "/checkout" | "/checkout/success" | "/checkout/cancel" | "/dashboard" | "/dashboard/profile" | "/dashboard/membership" | "/dashboard/usage" | "/dashboard/billing" | "/admin" | "/admin/tiers" | "/admin/features" | "/admin/users" | "/test";
+    page: "/" | "/pricing" | "/contact" | "/features" | "/auth/login" | "/auth/register" | "/auth/logout" | "/auth/forgot-password" | "/auth/reset-password" | "/auth/change-password" | "/checkout" | "/checkout/success" | "/checkout/cancel" | "/dashboard" | "/dashboard/profile" | "/dashboard/membership" | "/dashboard/usage" | "/dashboard/billing" | "/test" | "/admin" | "/admin/tiers" | "/admin/features" | "/admin/users";
   };
   "routes/_layout.tsx": {
     id: "routes/_layout";
@@ -143,6 +143,10 @@ type RouteFiles = {
     id: "routes/checkout.cancel";
     page: "/checkout/cancel";
   };
+  "routes/_protected.tsx": {
+    id: "routes/_protected";
+    page: "/dashboard" | "/dashboard/profile" | "/dashboard/membership" | "/dashboard/usage" | "/dashboard/billing" | "/test" | "/admin" | "/admin/tiers" | "/admin/features" | "/admin/users";
+  };
   "routes/dashboard.tsx": {
     id: "routes/dashboard";
     page: "/dashboard" | "/dashboard/profile" | "/dashboard/membership" | "/dashboard/usage" | "/dashboard/billing";
@@ -167,6 +171,14 @@ type RouteFiles = {
     id: "routes/dashboard.billing";
     page: "/dashboard/billing";
   };
+  "routes/test.tsx": {
+    id: "routes/test";
+    page: "/test";
+  };
+  "routes/test._index.tsx": {
+    id: "routes/test._index";
+    page: "/test";
+  };
   "routes/admin.tsx": {
     id: "routes/admin";
     page: "/admin" | "/admin/tiers" | "/admin/features" | "/admin/users";
@@ -187,14 +199,6 @@ type RouteFiles = {
     id: "routes/admin.users";
     page: "/admin/users";
   };
-  "routes/test.tsx": {
-    id: "routes/test";
-    page: "/test";
-  };
-  "routes/test._index.tsx": {
-    id: "routes/test._index";
-    page: "/test";
-  };
 };
 
 type RouteModules = {
@@ -213,17 +217,18 @@ type RouteModules = {
   "routes/checkout._index": typeof import("./app/routes/checkout._index.tsx");
   "routes/checkout.success": typeof import("./app/routes/checkout.success.tsx");
   "routes/checkout.cancel": typeof import("./app/routes/checkout.cancel.tsx");
+  "routes/_protected": typeof import("./app/routes/_protected.tsx");
   "routes/dashboard": typeof import("./app/routes/dashboard.tsx");
   "routes/dashboard._index": typeof import("./app/routes/dashboard._index.tsx");
   "routes/dashboard.profile": typeof import("./app/routes/dashboard.profile.tsx");
   "routes/dashboard.membership": typeof import("./app/routes/dashboard.membership.tsx");
   "routes/dashboard.usage": typeof import("./app/routes/dashboard.usage.tsx");
   "routes/dashboard.billing": typeof import("./app/routes/dashboard.billing.tsx");
+  "routes/test": typeof import("./app/routes/test.tsx");
+  "routes/test._index": typeof import("./app/routes/test._index.tsx");
   "routes/admin": typeof import("./app/routes/admin.tsx");
   "routes/admin._index": typeof import("./app/routes/admin._index.tsx");
   "routes/admin.tiers": typeof import("./app/routes/admin.tiers.tsx");
   "routes/admin.features": typeof import("./app/routes/admin.features.tsx");
   "routes/admin.users": typeof import("./app/routes/admin.users.tsx");
-  "routes/test": typeof import("./app/routes/test.tsx");
-  "routes/test._index": typeof import("./app/routes/test._index.tsx");
 };

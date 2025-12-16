@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react';
-import { Link } from 'react-router';
 import {
   AppBar,
   Toolbar,
@@ -11,6 +10,7 @@ import {
   Divider,
   ListItemIcon,
 } from '@mui/material';
+import { RouterLink } from '~/utils';
 import MenuIcon from '@mui/icons-material/Menu';
 import PersonIcon from '@mui/icons-material/Person';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -83,13 +83,13 @@ export function DashboardAppBar({ onMenuClick, user, drawerWidth }: DashboardApp
             </Typography>
           </MenuItem>
           <Divider />
-          <MenuItem component={Link} to="/dashboard/profile">
+          <MenuItem component={RouterLink} to="/dashboard/profile">
             <ListItemIcon>
               <PersonIcon fontSize="small" />
             </ListItemIcon>
             Profile
           </MenuItem>
-          <MenuItem component={Link} to="/auth/logout">
+          <MenuItem component={RouterLink} to="/auth/logout">
             <ListItemIcon>
               <LogoutIcon fontSize="small" />
             </ListItemIcon>

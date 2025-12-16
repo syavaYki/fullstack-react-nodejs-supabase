@@ -9,7 +9,6 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 import PaymentIcon from '@mui/icons-material/Payment';
 import ScienceIcon from '@mui/icons-material/Science';
 import { useAuth } from '~/contexts';
-import { ProtectedRoute } from '~/components/auth';
 import { DashboardSidebar, DashboardAppBar } from '~/components/dashboard';
 import type { DashboardMenuItem } from '~/components/dashboard';
 
@@ -81,12 +80,8 @@ function DashboardContent() {
 
 /**
  * Dashboard layout route component.
- * Wraps content in ProtectedRoute for authentication.
+ * Authentication is handled by the parent _protected layout.
  */
 export default function DashboardLayout() {
-  return (
-    <ProtectedRoute>
-      <DashboardContent />
-    </ProtectedRoute>
-  );
+  return <DashboardContent />;
 }

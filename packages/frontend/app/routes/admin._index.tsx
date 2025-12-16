@@ -13,7 +13,7 @@ import {
   Avatar,
   Chip,
 } from '@mui/material';
-import { Link } from 'react-router';
+import { RouterLink } from '~/utils';
 import PeopleIcon from '@mui/icons-material/People';
 import LayersIcon from '@mui/icons-material/Layers';
 import ExtensionIcon from '@mui/icons-material/Extension';
@@ -127,7 +127,7 @@ export default function AdminDashboardPage({ loaderData }: Route.ComponentProps)
                 }}
               >
                 <Typography variant="h6">Recent Signups</Typography>
-                <Button component={Link} to="/admin/users" size="small">
+                <Button component={RouterLink} to="/admin/users" size="small">
                   View All
                 </Button>
               </Box>
@@ -171,7 +171,7 @@ export default function AdminDashboardPage({ loaderData }: Route.ComponentProps)
               <Grid container spacing={2}>
                 <Grid size={6}>
                   <Button
-                    component={Link}
+                    component={RouterLink}
                     to="/admin/tiers"
                     variant="outlined"
                     fullWidth
@@ -182,7 +182,7 @@ export default function AdminDashboardPage({ loaderData }: Route.ComponentProps)
                 </Grid>
                 <Grid size={6}>
                   <Button
-                    component={Link}
+                    component={RouterLink}
                     to="/admin/features"
                     variant="outlined"
                     fullWidth
@@ -193,7 +193,7 @@ export default function AdminDashboardPage({ loaderData }: Route.ComponentProps)
                 </Grid>
                 <Grid size={6}>
                   <Button
-                    component={Link}
+                    component={RouterLink}
                     to="/admin/users"
                     variant="outlined"
                     fullWidth

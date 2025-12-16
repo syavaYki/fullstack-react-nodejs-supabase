@@ -1,4 +1,3 @@
-import { Link } from 'react-router';
 import {
   Box,
   Container,
@@ -8,6 +7,7 @@ import {
   IconButton,
   Divider,
 } from '@mui/material';
+import { RouterLink } from '~/utils';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import TwitterIcon from '@mui/icons-material/Twitter';
@@ -95,7 +95,7 @@ export function Footer() {
                 {links.map((link) => (
                   <Typography
                     key={link.label}
-                    component={Link}
+                    component={RouterLink}
                     to={link.path}
                     variant="body2"
                     sx={{

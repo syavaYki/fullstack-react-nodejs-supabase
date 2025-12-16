@@ -5,7 +5,6 @@
  */
 
 import { useState, useEffect, type ReactNode } from 'react';
-import { Link } from 'react-router';
 import {
   Box,
   Container,
@@ -15,6 +14,7 @@ import {
   Button,
   CircularProgress,
 } from '@mui/material';
+import { RouterLink } from '~/utils';
 import LockIcon from '@mui/icons-material/Lock';
 import { useAuth } from '../../contexts/AuthContext';
 import { membershipApi } from '../../api';
@@ -87,7 +87,7 @@ export function TierRoute({ children, allowedTiers }: TierRouteProps) {
                   You are currently on the <strong>{currentTier}</strong> plan.
                 </Typography>
               )}
-              <Button component={Link} to="/pricing" variant="contained" size="large">
+              <Button component={RouterLink} to="/pricing" variant="contained" size="large">
                 View Pricing
               </Button>
             </CardContent>

@@ -1,4 +1,3 @@
-import { Link } from 'react-router';
 import {
   Box,
   Drawer,
@@ -11,6 +10,7 @@ import {
   Button,
 } from '@mui/material';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
+import { RouterLink } from '~/utils';
 import type { MobileDrawerProps } from './types';
 
 /**
@@ -47,7 +47,7 @@ export function MobileDrawer({
         {navItems.map((item) => (
           <ListItem key={item.label} disablePadding>
             <ListItemButton
-              component={Link}
+              component={RouterLink}
               to={item.path}
               sx={{
                 textAlign: 'center',
@@ -71,12 +71,12 @@ export function MobileDrawer({
         {isAuthenticated ? (
           <>
             <ListItem disablePadding>
-              <ListItemButton component={Link} to="/dashboard" sx={{ textAlign: 'center' }}>
+              <ListItemButton component={RouterLink} to="/dashboard" sx={{ textAlign: 'center' }}>
                 <ListItemText primary="Dashboard" />
               </ListItemButton>
             </ListItem>
             <ListItem disablePadding>
-              <ListItemButton component={Link} to="/auth/logout" sx={{ textAlign: 'center' }}>
+              <ListItemButton component={RouterLink} to="/auth/logout" sx={{ textAlign: 'center' }}>
                 <ListItemText primary="Logout" />
               </ListItemButton>
             </ListItem>
@@ -84,12 +84,12 @@ export function MobileDrawer({
         ) : (
           <>
             <ListItem disablePadding>
-              <ListItemButton component={Link} to="/auth/login" sx={{ textAlign: 'center' }}>
+              <ListItemButton component={RouterLink} to="/auth/login" sx={{ textAlign: 'center' }}>
                 <ListItemText primary="Login" />
               </ListItemButton>
             </ListItem>
             <ListItem disablePadding sx={{ px: 2, pt: 1 }}>
-              <Button component={Link} to="/auth/register" variant="contained" fullWidth>
+              <Button component={RouterLink} to="/auth/register" variant="contained" fullWidth>
                 Get Started
               </Button>
             </ListItem>

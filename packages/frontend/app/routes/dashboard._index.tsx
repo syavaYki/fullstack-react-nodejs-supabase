@@ -12,7 +12,8 @@ import {
   Stack,
   CircularProgress,
 } from '@mui/material';
-import { Link, useLoaderData } from 'react-router';
+import { useLoaderData } from 'react-router';
+import { RouterLink } from '~/utils';
 import { useAuth } from '~/contexts';
 import type {
   UserProfile,
@@ -125,7 +126,7 @@ export default function DashboardIndex() {
                 to keep your premium features.
               </Typography>
             </Box>
-            <Button component={Link} to="/pricing" variant="contained">
+            <Button component={RouterLink} to="/pricing" variant="contained">
               Upgrade Now
             </Button>
           </CardContent>
@@ -237,11 +238,11 @@ export default function DashboardIndex() {
                 )}
               </Box>
               <Stack spacing={2}>
-                <Button component={Link} to="/dashboard/billing" variant="outlined" fullWidth>
+                <Button component={RouterLink} to="/dashboard/billing" variant="outlined" fullWidth>
                   Manage Subscription
                 </Button>
                 {(!membership?.tier || membership.tier.price_monthly === 0) && (
-                  <Button component={Link} to="/pricing" variant="contained" fullWidth>
+                  <Button component={RouterLink} to="/pricing" variant="contained" fullWidth>
                     Upgrade Plan
                   </Button>
                 )}

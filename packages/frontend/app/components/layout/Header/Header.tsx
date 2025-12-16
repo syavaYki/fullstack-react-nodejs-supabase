@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Link, useLocation } from 'react-router';
+import { useLocation } from 'react-router';
 import {
   AppBar,
   Box,
@@ -13,7 +13,7 @@ import {
 import MenuIcon from '@mui/icons-material/Menu';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import { useAuth } from '~/contexts';
-import { isActivePath } from '~/utils';
+import { isActivePath, RouterLink } from '~/utils';
 import { NavItems } from './NavItems';
 import { UserMenu, AuthButtons } from './UserMenu';
 import { MobileDrawer } from './MobileDrawer';
@@ -68,7 +68,7 @@ export function Header() {
           <Toolbar disableGutters sx={{ justifyContent: 'space-between' }}>
             {/* Logo */}
             <Box
-              component={Link}
+              component={RouterLink}
               to="/"
               sx={{
                 display: 'flex',

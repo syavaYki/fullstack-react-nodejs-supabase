@@ -1,5 +1,5 @@
-import { Link } from 'react-router';
 import { Box, Button } from '@mui/material';
+import { RouterLink } from '~/utils';
 import type { NavItemsProps } from './types';
 
 /**
@@ -18,7 +18,7 @@ export function NavItems({ items, isActive }: NavItemsProps) {
       {items.map((item) => (
         <Button
           key={item.label}
-          component={Link}
+          component={RouterLink}
           to={item.path}
           sx={{
             color: isActive(item.path) ? 'primary.main' : 'text.secondary',

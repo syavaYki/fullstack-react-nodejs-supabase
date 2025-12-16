@@ -19,7 +19,7 @@ import {
   Alert,
   CircularProgress,
 } from '@mui/material';
-import { Link } from 'react-router';
+import { RouterLink } from '~/utils';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
@@ -198,7 +198,13 @@ export default function BillingPage() {
                   {isRedirecting ? 'Redirecting...' : 'Manage Subscription'}
                 </Button>
               ) : (
-                <Button component={Link} to="/pricing" variant="contained" fullWidth sx={{ mt: 3 }}>
+                <Button
+                  component={RouterLink}
+                  to="/pricing"
+                  variant="contained"
+                  fullWidth
+                  sx={{ mt: 3 }}
+                >
                   Upgrade Plan
                 </Button>
               )}
@@ -260,7 +266,7 @@ export default function BillingPage() {
                   <Typography variant="body2" color="text.secondary">
                     No payment method on file. Upgrade to a paid plan to add a payment method.
                   </Typography>
-                  <Button component={Link} to="/pricing" variant="contained" sx={{ mt: 2 }}>
+                  <Button component={RouterLink} to="/pricing" variant="contained" sx={{ mt: 2 }}>
                     View Plans
                   </Button>
                 </Box>

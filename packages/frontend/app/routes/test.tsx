@@ -1,9 +1,8 @@
-import { Outlet, Link } from 'react-router';
+import { Outlet } from 'react-router';
 import { Box, Container, AppBar, Toolbar, Typography, Button } from '@mui/material';
+import { RouterLink } from '~/utils';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ScienceIcon from '@mui/icons-material/Science';
-import { ProtectedRoute } from '~/components/auth';
-
 function TestLayoutContent() {
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'grey.50' }}>
@@ -13,7 +12,12 @@ function TestLayoutContent() {
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
             Tier Access Test
           </Typography>
-          <Button component={Link} to="/dashboard" startIcon={<ArrowBackIcon />} color="inherit">
+          <Button
+            component={RouterLink}
+            to="/dashboard"
+            startIcon={<ArrowBackIcon />}
+            color="inherit"
+          >
             Back to Dashboard
           </Button>
         </Toolbar>
@@ -25,10 +29,10 @@ function TestLayoutContent() {
   );
 }
 
+/**
+ * Test layout route component.
+ * Authentication is handled by the parent _protected layout.
+ */
 export default function TestLayout() {
-  return (
-    <ProtectedRoute>
-      <TestLayoutContent />
-    </ProtectedRoute>
-  );
+  return <TestLayoutContent />;
 }
