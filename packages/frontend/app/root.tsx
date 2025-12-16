@@ -5,9 +5,18 @@ import {
   Scripts,
   ScrollRestoration,
   isRouteErrorResponse,
+  useNavigation,
 } from 'react-router';
 import type { Route } from './+types/root';
-import { ThemeProvider, CssBaseline, Container, Typography, Button, Box } from '@mui/material';
+import {
+  ThemeProvider,
+  CssBaseline,
+  Container,
+  Typography,
+  Button,
+  Box,
+  LinearProgress,
+} from '@mui/material';
 import { theme } from '~/theme';
 import { AuthProvider } from '~/contexts';
 
@@ -49,8 +58,25 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const navigation = useNavigation();
+  const isLoading = navigation.state === 'loading';
+
   return (
     <AuthProvider>
+      {/* Global loading indicator - shows during route transitions */}
+      {isLoading && (
+        <Box
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 9999,
+          }}
+        >
+          <LinearProgress />
+        </Box>
+      )}
       <Outlet />
     </AuthProvider>
   );
