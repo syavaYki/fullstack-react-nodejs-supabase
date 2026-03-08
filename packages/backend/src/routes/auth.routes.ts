@@ -1,44 +1,9 @@
-import { Router, Response } from 'express';
-import { z } from 'zod';
-import { authService } from '../services/auth.service.js';
-import { authMiddleware } from '../middleware/auth.middleware.js';
-import { asyncHandler } from '../middleware/error.middleware.js';
-import {
-  registerRateLimit,
-  loginRateLimit,
-  forgotPasswordRateLimit,
-} from '../middleware/rateLimit.middleware.js';
-import { AuthenticatedRequest } from '../types/index.js';
-import { createSupabaseReqResClient } from '../config/supabase.js';
-import { env } from '../config/env.js';
-
-const router = Router();
-
-// Validation schemas
-const registerSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
-  first_name: z.string().optional(),
-  last_name: z.string().optional(),
-});
-
-const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string(),
-});
-
-const refreshSchema = z.object({
-  refresh_token: z.string(),
-});
-
-const forgotPasswordSchema = z.object({
-  email: z.string().email(),
-  redirect_url: z.string().url().optional(),
-});
-
-const resetPasswordSchema = z.object({
-  password: z.string().min(6),
-});
+/**
+ * @swagger
+ * tags:
+ *   name: Auth
+ *   description: Authentication and session management
+ */
 
 /**
  * @swagger
@@ -47,10 +12,6 @@ const resetPasswordSchema = z.object({
  *     summary: Register a new user
  *     tags: [Auth]
  *     security: []
- *     deprecated: true
- *     description: |
- *       **DEPRECATED**: For cookie-based auth, use the Supabase client directly in your frontend.
- *       This endpoint is kept for API clients that need Bearer token auth.
  *     requestBody:
  *       required: true
  *       content:
@@ -62,32 +23,25 @@ const resetPasswordSchema = z.object({
  *               email:
  *                 type: string
  *                 format: email
+ *                 example: user@example.com
  *               password:
  *                 type: string
- *                 minLength: 6
+ *                 minLength: 8
+ *                 example: securepassword123
  *               first_name:
  *                 type: string
+ *                 example: John
  *               last_name:
  *                 type: string
+ *                 example: Doe
  *     responses:
  *       201:
- *         description: User registered successfully
+ *         description: Registration successful
  *       400:
- *         description: Invalid input
+ *         description: Validation error
+ *       429:
+ *         description: Rate limit exceeded
  */
-router.post(
-  '/register',
-  registerRateLimit,
-  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const input = registerSchema.parse(req.body);
-    const result = await authService.register(input);
-
-    res.status(201).json({
-      success: true,
-      data: result,
-    });
-  })
-);
 
 /**
  * @swagger
@@ -96,10 +50,6 @@ router.post(
  *     summary: Login with email and password
  *     tags: [Auth]
  *     security: []
- *     deprecated: true
- *     description: |
- *       **DEPRECATED**: For cookie-based auth, use the Supabase client directly in your frontend.
- *       This endpoint is kept for API clients that need Bearer token auth.
  *     requestBody:
  *       required: true
  *       content:
@@ -111,62 +61,35 @@ router.post(
  *               email:
  *                 type: string
  *                 format: email
+ *                 example: user@example.com
  *               password:
  *                 type: string
+ *                 example: securepassword123
  *     responses:
  *       200:
- *         description: Login successful
- *       401:
+ *         description: Login successful — sets session cookie
+ *       400:
  *         description: Invalid credentials
+ *       429:
+ *         description: Rate limit exceeded
  */
-router.post(
-  '/login',
-  loginRateLimit,
-  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const input = loginSchema.parse(req.body);
-    const result = await authService.login(input);
-
-    res.json({
-      success: true,
-      data: result,
-    });
-  })
-);
 
 /**
  * @swagger
  * /api/auth/logout:
  *   post:
- *     summary: Logout and invalidate session
+ *     summary: Logout and revoke session
  *     tags: [Auth]
- *     deprecated: true
- *     description: |
- *       **DEPRECATED**: For cookie-based auth, use the Supabase client directly in your frontend.
- *       This endpoint is kept for API clients that need Bearer token auth.
  *     responses:
  *       200:
  *         description: Logged out successfully
  */
-router.post(
-  '/logout',
-  authMiddleware,
-  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    if (req.accessToken) {
-      await authService.logout(req.accessToken);
-    }
-
-    res.json({
-      success: true,
-      message: 'Logged out successfully',
-    });
-  })
-);
 
 /**
  * @swagger
  * /api/auth/refresh:
  *   post:
- *     summary: Refresh access token
+ *     summary: Refresh access token using a refresh token
  *     tags: [Auth]
  *     security: []
  *     requestBody:
@@ -181,22 +104,10 @@ router.post(
  *                 type: string
  *     responses:
  *       200:
- *         description: Token refreshed successfully
- *       401:
- *         description: Invalid refresh token
+ *         description: New tokens returned
+ *       400:
+ *         description: Invalid or expired refresh token
  */
-router.post(
-  '/refresh',
-  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const { refresh_token } = refreshSchema.parse(req.body);
-    const result = await authService.refreshToken(refresh_token);
-
-    res.json({
-      success: true,
-      data: result,
-    });
-  })
-);
 
 /**
  * @swagger
@@ -216,32 +127,19 @@ router.post(
  *               email:
  *                 type: string
  *                 format: email
- *               redirect_url:
- *                 type: string
- *                 format: uri
+ *                 example: user@example.com
  *     responses:
  *       200:
- *         description: Reset email sent
+ *         description: Reset link sent (always returns success to avoid email enumeration)
+ *       429:
+ *         description: Rate limit exceeded
  */
-router.post(
-  '/forgot-password',
-  forgotPasswordRateLimit,
-  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const { email, redirect_url } = forgotPasswordSchema.parse(req.body);
-    await authService.forgotPassword(email, redirect_url);
-
-    res.json({
-      success: true,
-      message: 'Password reset email sent',
-    });
-  })
-);
 
 /**
  * @swagger
  * /api/auth/reset-password:
  *   post:
- *     summary: Reset password with token
+ *     summary: Reset password using a valid access token from the reset link
  *     tags: [Auth]
  *     requestBody:
  *       required: true
@@ -253,117 +151,145 @@ router.post(
  *             properties:
  *               password:
  *                 type: string
- *                 minLength: 6
+ *                 minLength: 8
+ *                 example: newSecurePassword123
  *     responses:
  *       200:
  *         description: Password reset successful
+ *       401:
+ *         description: Unauthorized — missing or invalid token
  */
-router.post(
-  '/reset-password',
-  authMiddleware,
-  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const { password } = resetPasswordSchema.parse(req.body);
-
-    if (!req.user) {
-      res.status(401).json({ success: false, error: 'Not authenticated' });
-      return;
-    }
-
-    await authService.resetPassword(req.user.id, password);
-
-    res.json({
-      success: true,
-      message: 'Password reset successful',
-    });
-  })
-);
 
 /**
  * @swagger
  * /api/auth/me:
  *   get:
- *     summary: Get current user
+ *     summary: Get current user profile
  *     tags: [Auth]
- *     description: |
- *       Returns the current authenticated user. Works with both cookie-based auth
- *       (browser clients) and Bearer token auth (API clients).
  *     responses:
  *       200:
- *         description: Current user data
+ *         description: Current user profile
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         profile:
+ *                           $ref: '#/components/schemas/UserProfile'
  *       401:
- *         description: Not authenticated
+ *         description: Unauthorized
  */
-router.get(
-  '/me',
-  authMiddleware,
+
+import { Router, Response } from 'express';
+import { AuthenticatedRequest } from '../types/index.js';
+import { asyncHandler } from '../middleware/error.middleware.js';
+import { authMiddleware } from '../middleware/auth.middleware.js';
+import { requireUser } from '../middleware/requireUser.middleware.js';
+import {
+  registerRateLimit,
+  loginRateLimit,
+  forgotPasswordRateLimit,
+} from '../middleware/rateLimit.middleware.js';
+import {
+  registerSchema,
+  loginSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  refreshTokenSchema,
+} from '../validation/index.js';
+import { authService } from '../services/auth.service.js';
+import { profileService } from '../services/profile.service.js';
+import { successResponse, errorResponse } from '../utils/index.js';
+import { env } from '../config/env.js';
+
+const router = Router();
+
+/** POST /auth/register */
+router.post(
+  '/register',
+  registerRateLimit,
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    res.json({
-      success: true,
-      data: { user: req.user },
-    });
+    const input = registerSchema.parse(req.body);
+    const result = await authService.register(input);
+    res.status(201).json(successResponse(result, 'Registration successful'));
   })
 );
 
-/**
- * @swagger
- * /api/auth/callback:
- *   get:
- *     summary: OAuth callback handler
- *     tags: [Auth]
- *     description: |
- *       Handles OAuth callback from Supabase. This endpoint is called after a user
- *       authenticates with an OAuth provider (Google, GitHub, etc.).
- *
- *       **Setup Required**: Add this URL to your Supabase project's redirect URLs:
- *       - Development: `http://localhost:3001/api/auth/callback`
- *       - Production: `https://your-domain.com/api/auth/callback`
- *     parameters:
- *       - in: query
- *         name: code
- *         schema:
- *           type: string
- *         description: Authorization code from OAuth provider
- *       - in: query
- *         name: next
- *         schema:
- *           type: string
- *         description: URL to redirect to after authentication (default is frontend URL)
- *     responses:
- *       302:
- *         description: Redirects to frontend with session cookie set
- *       400:
- *         description: Missing authorization code
- */
-router.get(
-  '/callback',
+/** POST /auth/login */
+router.post(
+  '/login',
+  loginRateLimit,
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const code = req.query.code as string;
-    const next = (req.query.next as string) || env.FRONTEND_URL;
+    const input = loginSchema.parse(req.body);
+    const result = await authService.login(input);
+    res.json(successResponse(result, 'Login successful'));
+  })
+);
 
-    if (!code) {
-      res.status(400).json({
-        success: false,
-        error: 'Missing authorization code',
-      });
+/** POST /auth/logout */
+router.post(
+  '/logout',
+  authMiddleware,
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    if (req.accessToken) {
+      await authService.logout(req.accessToken);
+    }
+    res.json(successResponse(null, 'Logged out successfully'));
+  })
+);
+
+/** POST /auth/refresh */
+router.post(
+  '/refresh',
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const { refresh_token } = refreshTokenSchema.parse(req.body);
+    const result = await authService.refreshToken(refresh_token);
+    res.json(successResponse(result));
+  })
+);
+
+/** POST /auth/forgot-password */
+router.post(
+  '/forgot-password',
+  forgotPasswordRateLimit,
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const { email } = forgotPasswordSchema.parse(req.body);
+    const redirectTo = `${env.FRONTEND_URL}/reset-password`;
+    await authService.forgotPassword(email, redirectTo);
+    // Always return success (don't reveal if email exists)
+    res.json(successResponse(null, 'If an account exists, a reset link has been sent'));
+  })
+);
+
+/** POST /auth/reset-password */
+router.post(
+  '/reset-password',
+  authMiddleware,
+  requireUser,
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const { password } = resetPasswordSchema.parse(req.body);
+    if (!req.accessToken) {
+      res.status(401).json(errorResponse('Access token required'));
       return;
     }
+    await authService.resetPassword(req.accessToken, password);
+    res.json(successResponse(null, 'Password reset successful'));
+  })
+);
 
-    // Create Supabase client with cookie context
-    const supabase = createSupabaseReqResClient(req, res);
-
-    // Exchange the code for a session
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-
-    if (error) {
-      console.error('OAuth callback error:', error);
-      // Redirect to frontend with error
-      res.redirect(`${env.FRONTEND_URL}/auth/error?message=${encodeURIComponent(error.message)}`);
-      return;
-    }
-
-    // Session cookies are automatically set by createSupabaseReqResClient
-    // Redirect to the next URL or frontend
-    res.redirect(next);
+/** GET /auth/me — get current user profile + membership */
+router.get(
+  '/me',
+  authMiddleware,
+  requireUser,
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const profile = await profileService.getProfile(req.user!.id);
+    res.json(successResponse({ profile }));
   })
 );
 

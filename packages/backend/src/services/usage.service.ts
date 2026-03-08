@@ -1,49 +1,20 @@
 import { supabaseAdmin } from '../config/supabase.js';
-import {
-  UsageTracking,
-  FeatureUsage,
-  UsageResult,
-  UsageSummary,
-  PeriodType,
-} from '../types/index.js';
+import { UsageTracking, FeatureUsage, UsageResult, UsageSummary } from '../types/index.js';
 import { ApiError } from '../middleware/error.middleware.js';
 import { membershipService } from './membership.service.js';
-
-/**
- * Mapping of feature keys to their reset period types.
- * - 'daily': Resets at end of each day (UTC)
- * - 'monthly': Resets at end of each month (UTC)
- * - 'lifetime': Never resets, cumulative usage
- * - 'none': No usage tracking (boolean features)
- */
-const FEATURE_PERIOD_MAP: Record<string, PeriodType> = {
-  team_collaboration: 'lifetime',
-  api_integrations: 'lifetime',
-  cloud_storage: 'lifetime',
-  ai_assistant: 'daily',
-  analytics_dashboard: 'none',
-};
+import { FEATURE_PERIOD_MAP } from '../constants/index.js';
+import { getEndOfDay, getEndOfMonth } from '../utils/index.js';
 
 /**
  * Service for tracking feature usage and enforcing limits.
- * Manages usage counters, period resets, and limit validation for tiered features.
  * Uses atomic database operations to prevent race conditions.
  */
 export class UsageService {
   /**
    * Initializes usage tracking records for a user based on their tier's features.
-   * Creates or resets usage_tracking records for all limit-type features.
-   * Called when a user changes tiers or on first access.
-   *
-   * @param userId - The Supabase user ID
-   * @param tierId - The UUID of the user's current tier
-   * @throws {ApiError} 500 if database operation fails
    */
   async initializeUsage(userId: string, tierId: string): Promise<void> {
-    // Get tier features
     const tierFeatures = await membershipService.getTierFeatures(tierId);
-
-    // Get all features
     const features = await membershipService.getAllFeatures();
 
     for (const tierFeature of tierFeatures) {
@@ -55,20 +26,18 @@ export class UsageService {
       const periodType = FEATURE_PERIOD_MAP[feature.key] || 'lifetime';
       const limit = this.parseLimit(tierFeature.value);
 
-      // Calculate period end based on period type
       let periodEnd: Date | null = null;
       if (periodType === 'daily') {
-        periodEnd = this.getEndOfDay();
+        periodEnd = getEndOfDay();
       } else if (periodType === 'monthly') {
-        periodEnd = this.getEndOfMonth();
+        periodEnd = getEndOfMonth();
       }
 
-      // Upsert usage tracking record
       const { error } = await supabaseAdmin.from('usage_tracking').upsert(
         {
           user_id: userId,
           feature_key: feature.key,
-          current_usage: 0, // Reset on tier change? Or keep existing?
+          current_usage: 0,
           usage_limit: limit,
           period_type: periodType,
           period_start: new Date().toISOString(),
@@ -87,11 +56,6 @@ export class UsageService {
 
   /**
    * Updates usage limits when a user changes tiers.
-   * Preserves current usage counts but updates the limits to match the new tier.
-   * Falls back to full initialization if records don't exist.
-   *
-   * @param userId - The Supabase user ID
-   * @param tierId - The UUID of the new tier
    */
   async updateLimitsForTier(userId: string, tierId: string): Promise<void> {
     const tierFeatures = await membershipService.getTierFeatures(tierId);
@@ -105,7 +69,6 @@ export class UsageService {
 
       const limit = this.parseLimit(tierFeature.value);
 
-      // Update only the limit, keep current usage
       const { error } = await supabaseAdmin
         .from('usage_tracking')
         .update({ usage_limit: limit })
@@ -113,7 +76,6 @@ export class UsageService {
         .eq('feature_key', feature.key);
 
       if (error) {
-        // If record doesn't exist, create it
         await this.initializeUsage(userId, tierId);
         return;
       }
@@ -122,21 +84,14 @@ export class UsageService {
 
   /**
    * Checks if a user can use a feature based on their current usage.
-   * Returns true if usage is below limit or if feature is unlimited (-1).
-   *
-   * @param userId - The Supabase user ID
-   * @param featureKey - The feature key to check
-   * @returns True if user can use the feature, false if limit exceeded
    */
   async canUseFeature(userId: string, featureKey: string): Promise<boolean> {
     const usage = await this.getUsage(userId, featureKey);
 
     if (!usage) {
-      // No tracking record - check if user has the feature at all
       return membershipService.userHasFeature(userId, featureKey);
     }
 
-    // -1 means unlimited
     if (usage.usage_limit === -1) {
       return true;
     }
@@ -145,58 +100,56 @@ export class UsageService {
   }
 
   /**
-   * Increment usage for a feature using atomic database operation.
-   * This prevents race conditions when multiple concurrent requests
-   * try to increment the same feature's usage.
+   * Increment usage using atomic database operation.
+   * The DB function returns (new_usage, at_limit). We derive the rest.
    */
   async incrementUsage(
     userId: string,
     featureKey: string,
-    amount: number = 1
+    amount: number = 1,
+    _retryCount: number = 0
   ): Promise<UsageResult> {
-    // Use atomic RPC function that handles period reset and increment in one transaction
+    const MAX_RETRIES = 1;
+
     const { data, error } = await supabaseAdmin.rpc('check_reset_and_increment_usage', {
       p_user_id: userId,
       p_feature_key: featureKey,
-      p_amount: amount,
     });
 
     if (error) {
       throw new ApiError(500, `Failed to increment usage: ${error.message}`);
     }
 
-    // Handle case where no usage record exists
-    if (!data || data.length === 0 || !data[0].success) {
-      // No record exists - need to initialize
+    if (!data || data.length === 0) {
+      if (_retryCount >= MAX_RETRIES) {
+        throw new ApiError(500, 'Failed to increment usage after initialization');
+      }
       const membership = await membershipService.getUserMembership(userId);
       await this.initializeUsage(userId, membership.tier_id);
-
-      // Try again after initialization
-      return this.incrementUsage(userId, featureKey, amount);
+      return this.incrementUsage(userId, featureKey, amount, _retryCount + 1);
     }
 
     const result = data[0];
+    const newUsage = result.new_usage ?? 0;
+    const atLimit = result.at_limit ?? false;
+
+    // Fetch the current limit to calculate remaining
+    const usage = await this.getUsage(userId, featureKey);
+    const usageLimit = usage?.usage_limit ?? 0;
 
     return {
       success: true,
-      current_usage: result.current_usage,
-      usage_limit: result.usage_limit,
-      remaining: result.remaining,
-      is_exceeded: result.is_exceeded,
+      current_usage: newUsage,
+      usage_limit: usageLimit,
+      remaining: usageLimit === -1 ? -1 : Math.max(0, usageLimit - newUsage),
+      is_exceeded: atLimit,
     };
   }
 
   /**
-   * Retrieves current usage statistics for a specific feature.
-   * Automatically resets the period if it has ended before returning data.
-   *
-   * @param userId - The Supabase user ID
-   * @param featureKey - The feature key to get usage for
-   * @returns Feature usage details including current/limit/percentage, or null if not tracked
-   * @throws {ApiError} 500 if database query fails
+   * Retrieves current usage for a specific feature.
    */
   async getUsage(userId: string, featureKey: string): Promise<FeatureUsage | null> {
-    // Check and reset if period has ended
     await this.checkAndResetPeriod(userId, featureKey);
 
     const { data, error } = await supabaseAdmin
@@ -214,8 +167,6 @@ export class UsageService {
     }
 
     const usageTracking = data as UsageTracking;
-
-    // Get feature name
     const features = await membershipService.getAllFeatures();
     const feature = features.find((f) => f.key === featureKey);
 
@@ -237,12 +188,7 @@ export class UsageService {
   }
 
   /**
-   * Retrieves usage statistics for all tracked features for a user.
-   * Returns a summary including the user's tier name and all feature usage.
-   *
-   * @param userId - The Supabase user ID
-   * @returns Usage summary with tier name and array of feature usage
-   * @throws {ApiError} 500 if database query fails
+   * Retrieves usage for all tracked features for a user.
    */
   async getAllUsage(userId: string): Promise<UsageSummary> {
     const tierWithFeatures = await membershipService.getUserTierWithFeatures(userId);
@@ -287,16 +233,10 @@ export class UsageService {
 
   /**
    * Resets usage counters for all expired periods.
-   * Intended to be called by a cron job (e.g., daily at midnight UTC).
-   * Only affects records with 'daily' or 'monthly' period types.
-   *
-   * @returns Number of records that were reset
-   * @throws {ApiError} 500 if database operation fails
    */
   async resetPeriodicUsage(): Promise<number> {
     const now = new Date();
 
-    // Find records where period_end has passed
     const { data: expiredRecords, error: selectError } = await supabaseAdmin
       .from('usage_tracking')
       .select('id, feature_key, period_type')
@@ -314,12 +254,7 @@ export class UsageService {
     let resetCount = 0;
 
     for (const record of expiredRecords) {
-      let newPeriodEnd: Date;
-      if (record.period_type === 'daily') {
-        newPeriodEnd = this.getEndOfDay();
-      } else {
-        newPeriodEnd = this.getEndOfMonth();
-      }
+      const newPeriodEnd = record.period_type === 'daily' ? getEndOfDay() : getEndOfMonth();
 
       const { error: updateError } = await supabaseAdmin
         .from('usage_tracking')
@@ -340,11 +275,6 @@ export class UsageService {
 
   /**
    * Checks if a usage period has ended and resets if necessary.
-   * Called before returning usage data to ensure accurate counts.
-   * Skips reset for 'lifetime' and 'none' period types.
-   *
-   * @param userId - The Supabase user ID
-   * @param featureKey - The feature key to check
    */
   private async checkAndResetPeriod(userId: string, featureKey: string): Promise<void> {
     const { data, error } = await supabaseAdmin
@@ -366,12 +296,7 @@ export class UsageService {
     const now = new Date();
 
     if (now > periodEnd) {
-      let newPeriodEnd: Date;
-      if (data.period_type === 'daily') {
-        newPeriodEnd = this.getEndOfDay();
-      } else {
-        newPeriodEnd = this.getEndOfMonth();
-      }
+      const newPeriodEnd = data.period_type === 'daily' ? getEndOfDay() : getEndOfMonth();
 
       await supabaseAdmin
         .from('usage_tracking')
@@ -386,43 +311,14 @@ export class UsageService {
 
   /**
    * Parses a limit value from JSONB storage into a number.
-   * Handles both numeric and string representations.
-   *
-   * @param value - The value from JSONB (number or string)
-   * @returns Parsed number, or 0 if unparseable
    */
   private parseLimit(value: unknown): number {
-    if (typeof value === 'number') {
-      return value;
-    }
+    if (typeof value === 'number') return value;
     if (typeof value === 'string') {
       const parsed = parseInt(value, 10);
       return isNaN(parsed) ? 0 : parsed;
     }
     return 0;
-  }
-
-  /**
-   * Calculates the end of the current day in UTC.
-   *
-   * @returns Date object set to 23:59:59.999 UTC of today
-   */
-  private getEndOfDay(): Date {
-    const now = new Date();
-    const endOfDay = new Date(now);
-    endOfDay.setUTCHours(23, 59, 59, 999);
-    return endOfDay;
-  }
-
-  /**
-   * Calculates the end of the current month in UTC.
-   *
-   * @returns Date object set to 23:59:59.999 UTC of the last day of the month
-   */
-  private getEndOfMonth(): Date {
-    const now = new Date();
-    const endOfMonth = new Date(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999);
-    return endOfMonth;
   }
 }
 

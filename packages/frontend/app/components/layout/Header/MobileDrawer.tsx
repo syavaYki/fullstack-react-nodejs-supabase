@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import { RouterLink } from '~/utils';
+import { branding } from '@config/branding';
 import type { MobileDrawerProps } from './types';
 
 /**
@@ -38,7 +39,7 @@ export function MobileDrawer({
       >
         <RocketLaunchIcon color="primary" />
         <Typography variant="h6" color="primary">
-          SaaS
+          {branding.logoText}
         </Typography>
       </Box>
 

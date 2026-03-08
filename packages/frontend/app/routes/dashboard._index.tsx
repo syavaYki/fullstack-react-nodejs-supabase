@@ -24,6 +24,7 @@ import type {
   FeatureUsage,
 } from '~/types';
 import { fetchWithCookies } from '~/lib/fetch.server';
+import { pageTitle } from '~/utils/meta';
 
 export async function loader({ request }: Route.LoaderArgs) {
   const [profile, membership, trialStatus, usage] = await Promise.all([
@@ -37,7 +38,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: 'Dashboard - SaaS Boilerplate' }];
+  return [{ title: pageTitle('Dashboard') }];
 }
 
 export default function DashboardIndex() {

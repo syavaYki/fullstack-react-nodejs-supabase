@@ -19,21 +19,17 @@ import {
 } from '@mui/material';
 import { theme } from '~/theme';
 import { AuthProvider } from '~/contexts';
+import { branding } from '@config/branding';
+import { BugReportFAB } from '~/components/bug-report';
 
 export const links: Route.LinksFunction = () => [
-  {
-    rel: 'preconnect',
-    href: 'https://fonts.googleapis.com',
-  },
-  {
-    rel: 'preconnect',
-    href: 'https://fonts.gstatic.com',
-    crossOrigin: 'anonymous',
-  },
-  {
-    rel: 'stylesheet',
-    href: 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap',
-  },
+  ...(branding.googleFontsUrl
+    ? [
+        { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossOrigin: 'anonymous' as const },
+        { rel: 'stylesheet', href: branding.googleFontsUrl },
+      ]
+    : []),
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -78,6 +74,7 @@ export default function App() {
         </Box>
       )}
       <Outlet />
+      <BugReportFAB />
     </AuthProvider>
   );
 }

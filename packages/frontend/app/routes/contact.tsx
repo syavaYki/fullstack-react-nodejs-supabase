@@ -17,10 +17,11 @@ import EmailIcon from '@mui/icons-material/Email';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import PhoneIcon from '@mui/icons-material/Phone';
 import * as contactApi from '~/api/contact.api';
+import { pageTitle } from '~/utils/meta';
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: 'Contact Us - SaaS Boilerplate' },
+    { title: pageTitle('Contact Us') },
     {
       name: 'description',
       content: 'Get in touch with our team.',

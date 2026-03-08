@@ -16,10 +16,12 @@ import { useSearchParams, useNavigate } from 'react-router';
 import { RouterLink } from '~/utils';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import { updatePassword } from '~/lib/supabase.client';
+import { pageTitle } from '~/utils/meta';
+import { branding } from '@config/branding';
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: 'Reset Password - SaaS Boilerplate' },
+    { title: pageTitle('Reset Password') },
     { name: 'description', content: 'Set your new password' },
   ];
 }
@@ -98,7 +100,7 @@ export default function ResetPasswordPage() {
           >
             <RocketLaunchIcon color="primary" sx={{ fontSize: 40 }} />
             <Typography variant="h4" sx={{ fontWeight: 700, color: 'primary.main' }}>
-              SaaS
+              {branding.logoText}
             </Typography>
           </Box>
           <Typography variant="h5" gutterBottom>

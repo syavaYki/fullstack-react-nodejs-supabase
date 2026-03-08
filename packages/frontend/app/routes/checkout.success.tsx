@@ -2,9 +2,10 @@ import type { Route } from './+types/checkout.success';
 import { Box, Container, Typography, Card, CardContent, Button, Stack } from '@mui/material';
 import { RouterLink } from '~/utils';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import { pageTitle } from '~/utils/meta';
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: 'Payment Successful - SaaS Boilerplate' }];
+  return [{ title: pageTitle('Payment Successful') }];
 }
 
 export default function CheckoutSuccessPage() {

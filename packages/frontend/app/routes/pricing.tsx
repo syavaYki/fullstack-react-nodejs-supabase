@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import type { Route } from './+types/pricing';
 import {
   Box,
@@ -27,6 +28,9 @@ import { useAuth } from '~/contexts';
 import { getMembership, type TierWithFeatures } from '~/api/membership.api';
 import type { Membership, MembershipTier } from '~/types';
 import { isFeatureAvailable, formatFeatureDisplay } from '~/utils';
+import { pageTitle } from '~/utils/meta';
+import { GRADIENTS } from '~/theme/index.js';
+import FadeInSection from '~/components/animations/FadeInSection.js';
 
 const BACKEND_URL = process.env.VITE_BACKEND_URL || 'http://localhost:3001';
 
@@ -57,7 +61,7 @@ export async function loader() {
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: 'Pricing - SaaS Boilerplate' },
+    { title: pageTitle('Pricing') },
     { name: 'description', content: "Choose the plan that's right for you." },
   ];
 }
@@ -135,137 +139,158 @@ export default function PricingPage() {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: { xs: 8, md: 12 } }}>
-      <Box sx={{ textAlign: 'center', mb: 8 }}>
-        <Typography variant="h2" gutterBottom>
-          Simple, Transparent Pricing
-        </Typography>
-        <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>
-          Choose the plan that's right for you
-        </Typography>
-        <ToggleButtonGroup
-          value={billingCycle}
-          exclusive
-          onChange={(_, value) => value && setBillingCycle(value)}
-          sx={{ bgcolor: 'grey.100', borderRadius: 2, p: 0.5 }}
-        >
-          <ToggleButton value="monthly" sx={{ px: 3, borderRadius: 1.5 }}>
-            Monthly
-          </ToggleButton>
-          <ToggleButton value="yearly" sx={{ px: 3, borderRadius: 1.5 }}>
-            Yearly
-            <Chip label="Save 17%" size="small" color="success" sx={{ ml: 1 }} />
-          </ToggleButton>
-        </ToggleButtonGroup>
-      </Box>
-
-      {loadingMembership && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
-          <CircularProgress size={24} />
-        </Box>
-      )}
-
-      <Grid container spacing={4} justifyContent="center">
-        {tiers.map((tier) => {
-          const isCurrent = isCurrentTier(tier);
-          const ctaProps = getCtaProps(tier);
-          const price = billingCycle === 'monthly' ? tier.price_monthly : tier.price_yearly;
-
-          return (
-            <Grid size={{ xs: 12, md: 4 }} key={tier.id}>
-              <Card
-                sx={{
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  position: 'relative',
-                  border: isCurrent ? 3 : 1,
-                  borderColor: isCurrent ? 'success.main' : 'divider',
-                  transform: isCurrent ? 'scale(1.02)' : 'none',
-                  boxShadow: isCurrent ? 8 : 1,
-                }}
+    <>
+      {/* Header */}
+      <Box sx={{ background: GRADIENTS.hero, py: { xs: 6, md: 8 } }}>
+        <Container maxWidth="lg">
+          <FadeInSection direction="up">
+            <Box sx={{ textAlign: 'center', mb: 4 }}>
+              <Chip label="Pricing" color="primary" variant="outlined" sx={{ mb: 2 }} />
+              <Typography variant="h2" gutterBottom>
+                Simple, Transparent Pricing
+              </Typography>
+              <Typography variant="h6" color="text.secondary" sx={{ mb: 4, fontWeight: 400 }}>
+                Choose the plan that's right for you
+              </Typography>
+              <ToggleButtonGroup
+                value={billingCycle}
+                exclusive
+                onChange={(_, value) => value && setBillingCycle(value)}
+                sx={{ bgcolor: 'white', borderRadius: 2, p: 0.5 }}
               >
-                {isCurrent && (
-                  <Chip
-                    label="Current Plan"
-                    color="success"
-                    size="small"
-                    sx={{
-                      position: 'absolute',
-                      top: -12,
-                      left: '50%',
-                      transform: 'translateX(-50%)',
-                    }}
-                  />
-                )}
-                <CardContent sx={{ flexGrow: 1, p: 4 }}>
-                  <Typography variant="h5" gutterBottom>
-                    {tier.display_name}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                    {tier.description || `Perfect for ${tier.name} users`}
-                  </Typography>
-                  <Box sx={{ mb: 3 }}>
-                    <Typography variant="h3" component="span" sx={{ fontWeight: 700 }}>
-                      ${price}
-                    </Typography>
-                    <Typography variant="body1" component="span" color="text.secondary">
-                      /{billingCycle === 'monthly' ? 'mo' : 'yr'}
-                    </Typography>
-                  </Box>
-                  <List dense>
-                    {tier.features.map((tierFeature) => {
-                      const available = isFeatureAvailable(tierFeature);
-                      const displayText = formatFeatureDisplay(tierFeature);
-
-                      if (!displayText) return null;
-
-                      return (
-                        <ListItem key={tierFeature.id} disablePadding sx={{ py: 0.5 }}>
-                          <ListItemIcon sx={{ minWidth: 32 }}>
-                            {available ? (
-                              <CheckIcon color="success" fontSize="small" />
-                            ) : (
-                              <CloseIcon color="disabled" fontSize="small" />
-                            )}
-                          </ListItemIcon>
-                          <ListItemText
-                            primary={displayText}
-                            primaryTypographyProps={{
-                              variant: 'body2',
-                              color: available ? 'text.primary' : 'text.disabled',
-                            }}
-                          />
-                        </ListItem>
-                      );
-                    })}
-                  </List>
-                </CardContent>
-                <CardActions sx={{ p: 4, pt: 0 }}>
-                  <Button
-                    component={ctaProps.disabled ? 'button' : RouterLink}
-                    to={ctaProps.disabled ? undefined : ctaProps.to}
-                    variant={ctaProps.variant}
-                    size="large"
-                    fullWidth
-                    color={isCurrent ? 'success' : 'primary'}
-                    disabled={ctaProps.disabled}
-                  >
-                    {ctaProps.label}
-                  </Button>
-                </CardActions>
-              </Card>
-            </Grid>
-          );
-        })}
-      </Grid>
-
-      {/* Features link */}
-      <Box sx={{ textAlign: 'center', mt: 6 }}>
-        <Button component={RouterLink} to="/features" variant="text" size="large">
-          Compare all features in detail
-        </Button>
+                <ToggleButton value="monthly" sx={{ px: 3, borderRadius: 1.5 }}>
+                  Monthly
+                </ToggleButton>
+                <ToggleButton value="yearly" sx={{ px: 3, borderRadius: 1.5 }}>
+                  Yearly
+                  <Chip label="Save 17%" size="small" color="success" sx={{ ml: 1 }} />
+                </ToggleButton>
+              </ToggleButtonGroup>
+            </Box>
+          </FadeInSection>
+        </Container>
       </Box>
-    </Container>
+
+      <Container maxWidth="lg" sx={{ py: { xs: 6, md: 8 } }}>
+        {loadingMembership && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
+            <CircularProgress size={24} />
+          </Box>
+        )}
+
+        <Grid container spacing={4} justifyContent="center">
+          {tiers.map((tier, index) => {
+            const isCurrent = isCurrentTier(tier);
+            const ctaProps = getCtaProps(tier);
+            const price = billingCycle === 'monthly' ? tier.price_monthly : tier.price_yearly;
+
+            return (
+              <Grid size={{ xs: 12, md: 4 }} key={tier.id}>
+                <FadeInSection direction="up" delay={index * 0.1}>
+                  <motion.div whileHover={{ y: -6, scale: 1.02 }} transition={{ duration: 0.2 }}>
+                    <Card
+                      sx={{
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        position: 'relative',
+                        border: isCurrent ? 3 : 1,
+                        borderColor: isCurrent ? 'success.main' : 'divider',
+                        transform: isCurrent ? 'scale(1.02)' : 'none',
+                        boxShadow: isCurrent ? 8 : 1,
+                      }}
+                    >
+                      {isCurrent && (
+                        <Chip
+                          label="Current Plan"
+                          color="success"
+                          size="small"
+                          sx={{
+                            position: 'absolute',
+                            top: -12,
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                          }}
+                        />
+                      )}
+                      <CardContent sx={{ flexGrow: 1, p: 4 }}>
+                        <Typography variant="h5" gutterBottom>
+                          {tier.display_name}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                          {tier.description || `Perfect for ${tier.name} users`}
+                        </Typography>
+                        <motion.div
+                          key={tier.id + billingCycle}
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.25 }}
+                        >
+                          <Box sx={{ mb: 3 }}>
+                            <Typography variant="h3" component="span" sx={{ fontWeight: 700 }}>
+                              ${price}
+                            </Typography>
+                            <Typography variant="body1" component="span" color="text.secondary">
+                              /{billingCycle === 'monthly' ? 'mo' : 'yr'}
+                            </Typography>
+                          </Box>
+                        </motion.div>
+                        <List dense>
+                          {tier.features.map((tierFeature) => {
+                            const available = isFeatureAvailable(tierFeature);
+                            const displayText = formatFeatureDisplay(tierFeature);
+
+                            if (!displayText) return null;
+
+                            return (
+                              <ListItem key={tierFeature.id} disablePadding sx={{ py: 0.5 }}>
+                                <ListItemIcon sx={{ minWidth: 32 }}>
+                                  {available ? (
+                                    <CheckIcon color="success" fontSize="small" />
+                                  ) : (
+                                    <CloseIcon color="disabled" fontSize="small" />
+                                  )}
+                                </ListItemIcon>
+                                <ListItemText
+                                  primary={displayText}
+                                  primaryTypographyProps={{
+                                    variant: 'body2',
+                                    color: available ? 'text.primary' : 'text.disabled',
+                                  }}
+                                />
+                              </ListItem>
+                            );
+                          })}
+                        </List>
+                      </CardContent>
+                      <CardActions sx={{ p: 4, pt: 0 }}>
+                        <Button
+                          component={ctaProps.disabled ? 'button' : RouterLink}
+                          to={ctaProps.disabled ? undefined : ctaProps.to}
+                          variant={ctaProps.variant}
+                          size="large"
+                          fullWidth
+                          color={isCurrent ? 'success' : 'primary'}
+                          disabled={ctaProps.disabled}
+                        >
+                          {ctaProps.label}
+                        </Button>
+                      </CardActions>
+                    </Card>
+                  </motion.div>
+                </FadeInSection>
+              </Grid>
+            );
+          })}
+        </Grid>
+
+        {/* Features link */}
+        <Box sx={{ textAlign: 'center', mt: 6 }}>
+          <Button component={RouterLink} to="/features" variant="text" size="large">
+            Compare all features in detail
+          </Button>
+        </Box>
+      </Container>
+    </>
   );
 }

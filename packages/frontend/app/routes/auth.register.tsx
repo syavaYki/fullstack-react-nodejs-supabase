@@ -1,5 +1,6 @@
 import type { Route } from './+types/auth.register';
 import { useState, type FormEvent } from 'react';
+import { motion } from 'framer-motion';
 import {
   Box,
   Container,
@@ -19,12 +20,12 @@ import { useNavigate } from 'react-router';
 import { RouterLink } from '~/utils';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import { useAuth } from '~/contexts';
+import { pageTitle } from '~/utils/meta';
+import { branding } from '@config/branding';
+import { GRADIENTS } from '~/theme/index.js';
 
 export function meta({}: Route.MetaArgs) {
-  return [
-    { title: 'Sign Up - SaaS Boilerplate' },
-    { name: 'description', content: 'Create your account' },
-  ];
+  return [{ title: pageTitle('Sign Up') }, { name: 'description', content: 'Create your account' }];
 }
 
 export default function RegisterPage() {
@@ -81,24 +82,30 @@ export default function RegisterPage() {
           minHeight: '100vh',
           display: 'flex',
           alignItems: 'center',
-          bgcolor: 'grey.50',
+          background: GRADIENTS.hero,
           py: 8,
         }}
       >
         <Container maxWidth="sm">
-          <Card>
-            <CardContent sx={{ p: 6, textAlign: 'center' }}>
-              <Typography variant="h5" gutterBottom color="success.main">
-                Account Created!
-              </Typography>
-              <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                Please check your email to verify your account.
-              </Typography>
-              <Button component={RouterLink} to="/auth/login" variant="contained">
-                Go to Login
-              </Button>
-            </CardContent>
-          </Card>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+          >
+            <Card>
+              <CardContent sx={{ p: 6, textAlign: 'center' }}>
+                <Typography variant="h5" gutterBottom color="success.main">
+                  Account Created!
+                </Typography>
+                <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                  Please check your email to verify your account.
+                </Typography>
+                <Button component={RouterLink} to="/auth/login" variant="contained">
+                  Go to Login
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
         </Container>
       </Box>
     );
@@ -110,147 +117,161 @@ export default function RegisterPage() {
         minHeight: '100vh',
         display: 'flex',
         alignItems: 'center',
-        bgcolor: 'grey.50',
+        background: GRADIENTS.hero,
         py: 8,
       }}
     >
       <Container maxWidth="sm">
-        <Box sx={{ textAlign: 'center', mb: 4 }}>
-          <Box
-            component={RouterLink}
-            to="/"
-            sx={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 1,
-              textDecoration: 'none',
-              color: 'inherit',
-              mb: 2,
-            }}
-          >
-            <RocketLaunchIcon color="primary" sx={{ fontSize: 40 }} />
-            <Typography variant="h4" sx={{ fontWeight: 700, color: 'primary.main' }}>
-              SaaS
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <Box sx={{ textAlign: 'center', mb: 4 }}>
+            <motion.div whileHover={{ scale: 1.05 }} style={{ display: 'inline-block' }}>
+              <Box
+                component={RouterLink}
+                to="/"
+                sx={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  textDecoration: 'none',
+                  color: 'inherit',
+                  mb: 2,
+                }}
+              >
+                <RocketLaunchIcon color="primary" sx={{ fontSize: 40 }} />
+                <Typography variant="h4" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                  {branding.logoText}
+                </Typography>
+              </Box>
+            </motion.div>
+            <Typography variant="h5" gutterBottom>
+              Create your account
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Start your free trial today
             </Typography>
           </Box>
-          <Typography variant="h5" gutterBottom>
-            Create your account
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Start your free trial today
-          </Typography>
-        </Box>
 
-        <Card>
-          <CardContent sx={{ p: 4 }}>
-            {error && (
-              <Alert severity="error" sx={{ mb: 3 }}>
-                {error}
-              </Alert>
-            )}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <Card>
+              <CardContent sx={{ p: 4 }}>
+                {error && (
+                  <Alert severity="error" sx={{ mb: 3 }}>
+                    {error}
+                  </Alert>
+                )}
 
-            <Box component="form" onSubmit={handleSubmit}>
-              <Stack spacing={3}>
-                <Grid container spacing={2}>
-                  <Grid size={6}>
+                <Box component="form" onSubmit={handleSubmit}>
+                  <Stack spacing={3}>
+                    <Grid container spacing={2}>
+                      <Grid size={6}>
+                        <TextField
+                          label="First Name"
+                          fullWidth
+                          autoComplete="given-name"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          disabled={loading}
+                        />
+                      </Grid>
+                      <Grid size={6}>
+                        <TextField
+                          label="Last Name"
+                          fullWidth
+                          autoComplete="family-name"
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          disabled={loading}
+                        />
+                      </Grid>
+                    </Grid>
                     <TextField
-                      label="First Name"
+                      label="Email"
+                      type="email"
                       fullWidth
-                      autoComplete="given-name"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
+                      required
+                      autoComplete="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
                       disabled={loading}
                     />
-                  </Grid>
-                  <Grid size={6}>
                     <TextField
-                      label="Last Name"
+                      label="Password"
+                      type="password"
                       fullWidth
-                      autoComplete="family-name"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
+                      required
+                      autoComplete="new-password"
+                      helperText="Must be at least 8 characters"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
                       disabled={loading}
                     />
-                  </Grid>
-                </Grid>
-                <TextField
-                  label="Email"
-                  type="email"
-                  fullWidth
-                  required
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={loading}
-                />
-                <TextField
-                  label="Password"
-                  type="password"
-                  fullWidth
-                  required
-                  autoComplete="new-password"
-                  helperText="Must be at least 8 characters"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={loading}
-                />
-                <TextField
-                  label="Confirm Password"
-                  type="password"
-                  fullWidth
-                  required
-                  autoComplete="new-password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  disabled={loading}
-                  error={confirmPassword !== '' && password !== confirmPassword}
-                  helperText={
-                    confirmPassword !== '' && password !== confirmPassword
-                      ? 'Passwords do not match'
-                      : undefined
-                  }
-                />
-                <Button
-                  type="submit"
-                  variant="contained"
-                  size="large"
-                  fullWidth
-                  disabled={loading}
-                  startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
-                >
-                  {loading ? 'Creating account...' : 'Create Account'}
-                </Button>
-                <Typography variant="caption" color="text.secondary" textAlign="center">
-                  By signing up, you agree to our{' '}
-                  <MuiLink href="#" sx={{ textDecoration: 'none' }}>
-                    Terms of Service
-                  </MuiLink>{' '}
-                  and{' '}
-                  <MuiLink href="#" sx={{ textDecoration: 'none' }}>
-                    Privacy Policy
+                    <TextField
+                      label="Confirm Password"
+                      type="password"
+                      fullWidth
+                      required
+                      autoComplete="new-password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      disabled={loading}
+                      error={confirmPassword !== '' && password !== confirmPassword}
+                      helperText={
+                        confirmPassword !== '' && password !== confirmPassword
+                          ? 'Passwords do not match'
+                          : undefined
+                      }
+                    />
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      size="large"
+                      fullWidth
+                      disabled={loading}
+                      startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
+                    >
+                      {loading ? 'Creating account...' : 'Create Account'}
+                    </Button>
+                    <Typography variant="caption" color="text.secondary" textAlign="center">
+                      By signing up, you agree to our{' '}
+                      <MuiLink href="#" sx={{ textDecoration: 'none' }}>
+                        Terms of Service
+                      </MuiLink>{' '}
+                      and{' '}
+                      <MuiLink href="#" sx={{ textDecoration: 'none' }}>
+                        Privacy Policy
+                      </MuiLink>
+                    </Typography>
+                  </Stack>
+                </Box>
+
+                <Divider sx={{ my: 3 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    or
+                  </Typography>
+                </Divider>
+
+                <Typography variant="body2" textAlign="center">
+                  Already have an account?{' '}
+                  <MuiLink
+                    component={RouterLink}
+                    to="/auth/login"
+                    sx={{ textDecoration: 'none', fontWeight: 500 }}
+                  >
+                    Sign in
                   </MuiLink>
                 </Typography>
-              </Stack>
-            </Box>
-
-            <Divider sx={{ my: 3 }}>
-              <Typography variant="body2" color="text.secondary">
-                or
-              </Typography>
-            </Divider>
-
-            <Typography variant="body2" textAlign="center">
-              Already have an account?{' '}
-              <MuiLink
-                component={RouterLink}
-                to="/auth/login"
-                sx={{ textDecoration: 'none', fontWeight: 500 }}
-              >
-                Sign in
-              </MuiLink>
-            </Typography>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </motion.div>
       </Container>
     </Box>
   );

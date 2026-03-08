@@ -11,6 +11,7 @@ import ScienceIcon from '@mui/icons-material/Science';
 import { useAuth } from '~/contexts';
 import { DashboardSidebar, DashboardAppBar } from '~/components/dashboard';
 import type { DashboardMenuItem } from '~/components/dashboard';
+import { pageTitle } from '~/utils/meta';
 
 /** Drawer width constant */
 const DRAWER_WIDTH = 240;
@@ -26,7 +27,7 @@ const menuItems: DashboardMenuItem[] = [
 ];
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: 'Dashboard - SaaS Boilerplate' }];
+  return [{ title: pageTitle('Dashboard') }];
 }
 
 /**

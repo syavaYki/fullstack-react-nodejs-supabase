@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import type { Route } from './+types/features';
 import {
   Box,
@@ -19,6 +20,9 @@ import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import { getPublicTiersWithFeatures } from '../api/membership.api';
 import { isFeatureAvailable, formatFeatureValue } from '~/utils';
+import { pageTitle } from '~/utils/meta';
+import { GRADIENTS } from '~/theme/index.js';
+import FadeInSection from '~/components/animations/FadeInSection.js';
 
 // Loader: fetches data before rendering
 export async function loader() {
@@ -40,7 +44,7 @@ export async function loader() {
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: 'Features - SaaS Boilerplate' },
+    { title: pageTitle('Features') },
     {
       name: 'description',
       content: 'Explore features across all membership tiers',
@@ -70,21 +74,25 @@ export default function FeaturesPage() {
   return (
     <>
       {/* Header Section */}
-      <Box sx={{ bgcolor: 'grey.50', py: 1 }}>
+      <Box sx={{ background: GRADIENTS.hero, py: 1 }}>
         <Container maxWidth="lg">
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography variant="h2" gutterBottom>
-              Features
-            </Typography>
+          <FadeInSection direction="up">
+            <Box sx={{ textAlign: 'center' }}>
+              <Chip label="All Features" color="primary" variant="outlined" sx={{ mb: 2 }} />
+              <Typography variant="h2" gutterBottom>
+                Features
+              </Typography>
 
-            <Typography
-              variant="h6"
-              color="text.secondary"
-              sx={{ maxWidth: 600, mx: 'auto', mb: 4 }}
-            >
-              Compare features across all membership tiers and find the perfect plan for your needs
-            </Typography>
-          </Box>
+              <Typography
+                variant="h6"
+                color="text.secondary"
+                sx={{ maxWidth: 600, mx: 'auto', mb: 4, fontWeight: 400 }}
+              >
+                Compare features across all membership tiers and find the perfect plan for your
+                needs
+              </Typography>
+            </Box>
+          </FadeInSection>
 
           {/* Tier Tabs */}
           <Box
@@ -162,7 +170,7 @@ export default function FeaturesPage() {
 
         {/* Features Cards */}
         <Grid container spacing={3}>
-          {currentTier.features.map((tierFeature) => {
+          {currentTier.features.map((tierFeature, index) => {
             const feature = tierFeature.feature;
             if (!feature) return null;
 
@@ -171,77 +179,88 @@ export default function FeaturesPage() {
 
             return (
               <Grid size={{ xs: 12, sm: 6, md: 4 }} key={tierFeature.id}>
-                <Card
-                  sx={{
-                    height: '100%',
-                    opacity: available ? 1 : 0.6,
-                    borderLeft: 4,
-                    borderColor: available ? 'success.main' : 'grey.300',
-                  }}
-                >
-                  <CardContent sx={{ p: 3 }}>
-                    <Box
+                <FadeInSection direction="up" delay={(index % 6) * 0.07}>
+                  <motion.div whileHover={{ y: -4, scale: 1.02 }} transition={{ duration: 0.2 }}>
+                    <Card
                       sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
-                        mb: 2,
+                        height: '100%',
+                        opacity: available ? 1 : 0.6,
+                        borderLeft: 4,
+                        borderColor: available ? 'success.main' : 'grey.300',
                       }}
                     >
-                      {available ? <CheckIcon color="success" /> : <CloseIcon color="disabled" />}
-                      <Typography variant="h6">{feature.name}</Typography>
-                    </Box>
+                      <CardContent sx={{ p: 3 }}>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1,
+                            mb: 2,
+                          }}
+                        >
+                          {available ? (
+                            <CheckIcon color="success" />
+                          ) : (
+                            <CloseIcon color="disabled" />
+                          )}
+                          <Typography variant="h6">{feature.name}</Typography>
+                        </Box>
 
-                    {feature.description && (
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                        {feature.description}
-                      </Typography>
-                    )}
+                        {feature.description && (
+                          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                            {feature.description}
+                          </Typography>
+                        )}
 
-                    <Chip
-                      label={displayValue}
-                      size="small"
-                      color={available ? 'primary' : 'default'}
-                      variant={available ? 'filled' : 'outlined'}
-                    />
-                  </CardContent>
-                </Card>
+                        <Chip
+                          label={displayValue}
+                          size="small"
+                          color={available ? 'primary' : 'default'}
+                          variant={available ? 'filled' : 'outlined'}
+                        />
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                </FadeInSection>
               </Grid>
             );
           })}
         </Grid>
 
         {/* CTA Section */}
-        <Box
-          sx={{
-            textAlign: 'center',
-            py: 2,
-            bgcolor: 'grey.50',
-            borderRadius: 2,
-          }}
-        >
-          <Typography variant="h4" gutterBottom>
-            Ready to Get Started?
-          </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-            Choose the plan that's right for you and start building today.
-          </Typography>
+        <FadeInSection direction="up">
           <Box
             sx={{
-              display: 'flex',
-              gap: 2,
-              justifyContent: 'center',
-              flexWrap: 'wrap',
+              textAlign: 'center',
+              py: 2,
+              background: GRADIENTS.heroStrong,
+              borderRadius: 3,
+              mt: 4,
             }}
           >
-            <Button component={RouterLink} to="/pricing" variant="contained" size="large">
-              View Pricing
-            </Button>
-            <Button component={RouterLink} to="/auth/register" variant="outlined" size="large">
-              Get Started Free
-            </Button>
+            <Typography variant="h4" gutterBottom>
+              Ready to Get Started?
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+              Choose the plan that's right for you and start building today.
+            </Typography>
+            <Box
+              sx={{
+                display: 'flex',
+                gap: 2,
+                justifyContent: 'center',
+                flexWrap: 'wrap',
+              }}
+            >
+              <Button component={RouterLink} to="/pricing" variant="contained" size="large">
+                View Pricing
+              </Button>
+              <Button component={RouterLink} to="/auth/register" variant="outlined" size="large">
+                Get Started Free
+              </Button>
+            </Box>
           </Box>
-        </Box>
+        </FadeInSection>
       </Container>
     </>
   );

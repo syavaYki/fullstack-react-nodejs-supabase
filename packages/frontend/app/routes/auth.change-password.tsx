@@ -15,10 +15,11 @@ import {
 } from '@mui/material';
 import { useAuth } from '~/contexts';
 import { updatePassword } from '~/lib/supabase.client';
+import { pageTitle } from '~/utils/meta';
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: 'Change Password - SaaS Boilerplate' },
+    { title: pageTitle('Change Password') },
     { name: 'description', content: 'Update your password' },
   ];
 }

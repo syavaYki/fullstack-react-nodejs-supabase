@@ -2,9 +2,10 @@ import type { Route } from './+types/checkout.cancel';
 import { Box, Container, Typography, Card, CardContent, Button, Stack } from '@mui/material';
 import { RouterLink } from '~/utils';
 import CancelIcon from '@mui/icons-material/Cancel';
+import { pageTitle } from '~/utils/meta';
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: 'Payment Cancelled - SaaS Boilerplate' }];
+  return [{ title: pageTitle('Payment Cancelled') }];
 }
 
 export default function CheckoutCancelPage() {

@@ -1,16 +1,12 @@
 import { Response, NextFunction } from 'express';
-import { supabaseAdmin, createSupabaseReqResClient } from '../config/supabase.js';
 import { AuthenticatedRequest } from '../types/index.js';
+import { createSupabaseReqResClient, supabaseAdmin } from '../config/supabase.js';
+import { logger } from '../utils/logger.js';
 
 /**
- * Middleware to verify Supabase auth via cookies or Bearer token
- *
- * Authentication Priority:
- * 1. Cookies (browser clients) - uses @supabase/ssr for auto-refresh
- * 2. Authorization header (API clients) - Bearer token
- *
- * Cookie-based auth automatically refreshes expired tokens and sets
- * new cookies on the response.
+ * Auth middleware: validates JWT and sets req.user.
+ * 1. Tries cookie-based auth (browser sessions via @supabase/ssr)
+ * 2. Falls back to Authorization: Bearer token (API clients)
  */
 export async function authMiddleware(
   req: AuthenticatedRequest,
@@ -18,83 +14,43 @@ export async function authMiddleware(
   next: NextFunction
 ): Promise<void> {
   try {
-    // 1. Try cookie-based auth first (browser clients)
-    // This uses @supabase/ssr which automatically handles token refresh
-    const supabase = createSupabaseReqResClient(req, res);
-    const { data: { user: cookieUser }, error: cookieError } = await supabase.auth.getUser();
+    // Strategy 1: Cookie-based auth (browser sessions)
+    const supabaseReqRes = createSupabaseReqResClient(req, res);
+    const { data: cookieData } = await supabaseReqRes.auth.getUser();
 
-    if (cookieUser && !cookieError) {
-      req.user = cookieUser;
-      // Get the session for the access token
-      const { data: { session } } = await supabase.auth.getSession();
-      req.accessToken = session?.access_token;
+    if (cookieData?.user) {
+      req.user = cookieData.user;
+      const { data: sessionData } = await supabaseReqRes.auth.getSession();
+      req.accessToken = sessionData?.session?.access_token;
       return next();
     }
 
-    // 2. Fallback to Authorization header (API clients)
+    // Strategy 2: Bearer token (API clients, mobile)
     const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.split(' ')[1];
-      const { data, error } = await supabaseAdmin.auth.getUser(token);
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      const { data: tokenData, error } = await supabaseAdmin.auth.getUser(token);
 
-      if (data.user && !error) {
-        req.user = data.user;
-        req.accessToken = token;
-        return next();
+      if (error || !tokenData?.user) {
+        logger.debug('AUTH', 'Bearer token invalid', { error: error?.message });
+        return next(); // Continue without auth — route can decide if auth is required
       }
+
+      req.user = tokenData.user;
+      req.accessToken = token;
+      return next();
     }
 
-    // No valid authentication found
-    res.status(401).json({
-      success: false,
-      error: 'Not authenticated',
-    });
+    // No auth credentials found — continue without user
+    next();
   } catch (error) {
-    console.error('Auth middleware error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Authentication failed',
-    });
+    logger.logError('AUTH', 'Auth middleware error', error);
+    res.status(503).json({ success: false, error: 'Authentication service unavailable' });
   }
 }
 
 /**
- * Optional auth middleware - doesn't fail if no auth, just attaches user if present
- * Useful for routes that work with or without authentication
+ * Optional auth — same as authMiddleware but explicitly signals
+ * that the route works with or without authentication.
  */
-export async function optionalAuthMiddleware(
-  req: AuthenticatedRequest,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  try {
-    // 1. Try cookie-based auth first
-    const supabase = createSupabaseReqResClient(req, res);
-    const { data: { user: cookieUser } } = await supabase.auth.getUser();
-
-    if (cookieUser) {
-      req.user = cookieUser;
-      const { data: { session } } = await supabase.auth.getSession();
-      req.accessToken = session?.access_token;
-      return next();
-    }
-
-    // 2. Fallback to Authorization header
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.split(' ')[1];
-      const { data } = await supabaseAdmin.auth.getUser(token);
-
-      if (data.user) {
-        req.user = data.user;
-        req.accessToken = token;
-      }
-    }
-
-    // Continue regardless of auth status
-    next();
-  } catch {
-    // Continue without user on error
-    next();
-  }
-}
+export const optionalAuthMiddleware = authMiddleware;

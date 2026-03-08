@@ -21,10 +21,11 @@ import PeopleIcon from '@mui/icons-material/People';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import { Header } from '../components/layout/Header';
 import { Footer } from '../components/layout/Footer';
+import { pageTitle } from '~/utils/meta';
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: 'Admin Dashboard - SaaS Boilerplate' },
+    { title: pageTitle('Admin Dashboard') },
     { name: 'description', content: 'Admin dashboard for managing the application' },
   ];
 }

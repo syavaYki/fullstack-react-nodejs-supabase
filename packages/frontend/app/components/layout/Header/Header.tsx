@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useLocation } from 'react-router';
 import {
   AppBar,
@@ -14,6 +14,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import { useAuth } from '~/contexts';
 import { isActivePath, RouterLink } from '~/utils';
+import { branding } from '@config/branding';
 import { NavItems } from './NavItems';
 import { UserMenu, AuthButtons } from './UserMenu';
 import { MobileDrawer } from './MobileDrawer';
@@ -31,15 +32,22 @@ const defaultNavItems: NavItem[] = [
 
 /**
  * Main header component with responsive navigation.
- * Includes desktop navigation, user menu, and mobile drawer.
+ * Scroll-aware: transparent at top, frosted-glass on scroll.
  */
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { user, isAuthenticated, isAdmin } = useAuth();
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 50);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleDrawerToggle = () => {
     setMobileOpen((prev) => !prev);
@@ -63,7 +71,18 @@ export function Header() {
 
   return (
     <>
-      <AppBar position="sticky" elevation={0} sx={{ borderBottom: 1, borderColor: 'divider' }}>
+      <AppBar
+        position="fixed"
+        elevation={0}
+        sx={{
+          background: scrolled ? 'rgba(255,255,255,0.92)' : 'transparent',
+          backdropFilter: scrolled ? 'blur(12px)' : 'none',
+          WebkitBackdropFilter: scrolled ? 'blur(12px)' : 'none',
+          boxShadow: scrolled ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+          color: scrolled ? 'text.primary' : '#0f172a',
+          transition: 'all 0.3s ease',
+        }}
+      >
         <Container maxWidth="lg">
           <Toolbar disableGutters sx={{ justifyContent: 'space-between' }}>
             {/* Logo */}
@@ -86,7 +105,7 @@ export function Header() {
                   color: 'primary.main',
                 }}
               >
-                SaaS
+                {branding.logoText}
               </Typography>
             </Box>
 

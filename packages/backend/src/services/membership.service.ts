@@ -7,28 +7,20 @@ import {
   UserTierWithFeatures,
 } from '../types/index.js';
 import { ApiError } from '../middleware/error.middleware.js';
+import { stripeService } from './stripe.service.js';
+import { logger } from '../utils/logger.js';
 
 /**
  * Service for managing membership tiers, user memberships, and feature access.
- * Handles tier queries, membership CRUD, and feature checks via database functions.
  */
 export class MembershipService {
   /**
-   * Retrieves all active membership tiers ordered by sort_order.
-   * Used to display available plans to users.
-   *
-   * @param accessToken - Optional access token for RLS-compliant queries
-   * @returns Array of active membership tiers
-   * @throws {ApiError} 500 if database query fails
+   * Retrieves all membership tiers ordered by sort_order.
    */
   async getTiers(accessToken?: string): Promise<MembershipTier[]> {
     const client = accessToken ? createSupabaseClientWithAuth(accessToken) : supabaseAdmin;
 
-    const { data, error } = await client
-      .from('membership_tiers')
-      .select('*')
-      .eq('is_active', true)
-      .order('sort_order');
+    const { data, error } = await client.from('membership_tiers').select('*').order('sort_order');
 
     if (error) {
       throw new ApiError(500, error.message);
@@ -39,11 +31,6 @@ export class MembershipService {
 
   /**
    * Retrieves a specific membership tier by its UUID.
-   *
-   * @param tierId - The UUID of the tier
-   * @returns The membership tier details
-   * @throws {ApiError} 404 if tier not found
-   * @throws {ApiError} 500 if database query fails
    */
   async getTierById(tierId: string): Promise<MembershipTier> {
     const { data, error } = await supabaseAdmin
@@ -63,12 +50,7 @@ export class MembershipService {
   }
 
   /**
-   * Retrieves a membership tier by its unique name (e.g., 'free', 'premium', 'pro').
-   *
-   * @param name - The tier name (lowercase, e.g., 'free', 'trial', 'premium')
-   * @returns The membership tier details
-   * @throws {ApiError} 404 if tier not found
-   * @throws {ApiError} 500 if database query fails
+   * Retrieves a membership tier by its unique name (e.g., 'free', 'premium').
    */
   async getTierByName(name: string): Promise<MembershipTier> {
     const { data, error } = await supabaseAdmin
@@ -89,13 +71,6 @@ export class MembershipService {
 
   /**
    * Retrieves a user's current membership with full tier details.
-   * Includes joined tier data for display purposes.
-   *
-   * @param userId - The Supabase user ID
-   * @param accessToken - Optional access token for RLS-compliant queries
-   * @returns Membership with nested tier object
-   * @throws {ApiError} 404 if membership not found
-   * @throws {ApiError} 500 if database query fails
    */
   async getUserMembership(
     userId: string,
@@ -121,11 +96,6 @@ export class MembershipService {
 
   /**
    * Retrieves a user's tier along with all associated features.
-   * Uses a database function that aggregates features into a JSON object.
-   *
-   * @param userId - The Supabase user ID
-   * @returns Tier info with features map, or null if user has no membership
-   * @throws {ApiError} 500 if database function fails
    */
   async getUserTierWithFeatures(userId: string): Promise<UserTierWithFeatures | null> {
     const { data, error } = await supabaseAdmin.rpc('get_user_tier_with_features', {
@@ -141,24 +111,13 @@ export class MembershipService {
 
   /**
    * Retrieves all features assigned to a specific tier with full feature details.
-   * Includes the feature definition via join for display and validation.
-   *
-   * @param tierId - The UUID of the membership tier
-   * @param accessToken - Optional access token for RLS-compliant queries
-   * @returns Array of tier features with nested feature definitions
-   * @throws {ApiError} 500 if database query fails
    */
   async getTierFeatures(tierId: string, accessToken?: string): Promise<TierFeatureWithDetails[]> {
     const client = accessToken ? createSupabaseClientWithAuth(accessToken) : supabaseAdmin;
 
     const { data, error } = await client
       .from('tier_features')
-      .select(
-        `
-        *,
-        feature:features(*)
-      `
-      )
+      .select(`*, feature:features(*)`)
       .eq('tier_id', tierId);
 
     if (error) {
@@ -170,10 +129,6 @@ export class MembershipService {
 
   /**
    * Retrieves all active features defined in the system.
-   * Features define capabilities that can be assigned to tiers.
-   *
-   * @returns Array of all active feature definitions
-   * @throws {ApiError} 500 if database query fails
    */
   async getAllFeatures(): Promise<Feature[]> {
     const { data, error } = await supabaseAdmin.from('features').select('*').eq('is_active', true);
@@ -187,12 +142,6 @@ export class MembershipService {
 
   /**
    * Checks if a user has access to a specific feature based on their tier.
-   * Uses database function that considers tier assignment and feature values.
-   *
-   * @param userId - The Supabase user ID
-   * @param featureKey - The feature key to check (e.g., 'api_integrations')
-   * @returns True if user has the feature enabled
-   * @throws {ApiError} 500 if database function fails
    */
   async userHasFeature(userId: string, featureKey: string): Promise<boolean> {
     const { data, error } = await supabaseAdmin.rpc('user_has_feature', {
@@ -210,11 +159,6 @@ export class MembershipService {
   /**
    * Retrieves the numeric limit for a feature based on user's tier.
    * Returns -1 for unlimited features, 0 if feature not available.
-   *
-   * @param userId - The Supabase user ID
-   * @param featureKey - The feature key (e.g., 'team_members', 'api_calls')
-   * @returns The limit value (-1 = unlimited, 0 = none, positive = limit)
-   * @throws {ApiError} 500 if database function fails
    */
   async getFeatureLimit(userId: string, featureKey: string): Promise<number> {
     const { data, error } = await supabaseAdmin.rpc('get_feature_limit', {
@@ -231,12 +175,6 @@ export class MembershipService {
 
   /**
    * Updates a user's membership with partial data.
-   * Primarily used by admin operations and webhook handlers.
-   *
-   * @param userId - The Supabase user ID
-   * @param updates - Partial membership data to update
-   * @returns The updated membership
-   * @throws {ApiError} 500 if database update fails
    */
   async updateMembership(userId: string, updates: Partial<Membership>): Promise<Membership> {
     const { data, error } = await supabaseAdmin
@@ -255,22 +193,13 @@ export class MembershipService {
 
   /**
    * Changes a user's tier directly without payment processing.
-   * Intended for testing/development or admin overrides.
    * Uses atomic database function to prevent race conditions.
-   *
-   * @param userId - The Supabase user ID
-   * @param tierId - The UUID of the target tier
-   * @param billingCycle - The billing cycle ('monthly' or 'yearly'), defaults to 'monthly'
-   * @returns The updated membership with tier details
-   * @throws {ApiError} 400 if tier is invalid or inactive
-   * @throws {ApiError} 500 if database operation fails
    */
   async changeTier(
     userId: string,
     tierId: string,
     billingCycle: 'monthly' | 'yearly' = 'monthly'
   ): Promise<Membership & { tier: MembershipTier }> {
-    // Use atomic RPC function that validates tier and updates membership in one transaction
     const { data: rpcResult, error: rpcError } = await supabaseAdmin.rpc('change_user_tier', {
       p_user_id: userId,
       p_tier_id: tierId,
@@ -286,7 +215,6 @@ export class MembershipService {
       throw new ApiError(400, errorMsg);
     }
 
-    // Fetch the updated membership with tier data
     const { data, error } = await supabaseAdmin
       .from('memberships')
       .select('*, tier:membership_tiers(*)')
@@ -302,14 +230,6 @@ export class MembershipService {
 
   /**
    * Upgrades a user's membership after successful Stripe payment.
-   * Called by webhook handler after checkout.session.completed event.
-   * Note: stripe_customer_id is stored in user_profiles, not memberships.
-   *
-   * @param userId - The Supabase user ID
-   * @param tierId - The UUID of the new tier
-   * @param stripeData - Stripe subscription details from the webhook
-   * @returns The updated membership
-   * @throws {ApiError} 500 if database update fails
    */
   async upgradeMembership(
     userId: string,
@@ -343,6 +263,108 @@ export class MembershipService {
     }
 
     return data as Membership;
+  }
+
+  // ============================================
+  // Stripe-as-truth sync methods
+  // ============================================
+
+  /**
+   * Syncs membership data from Stripe subscription.
+   * Uses 24-hour cache to avoid excessive Stripe API calls.
+   *
+   * ARCHITECTURE: Absence of Stripe subscription = Free tier.
+   */
+  async syncFromStripe(
+    userId: string,
+    forceSync: boolean = false
+  ): Promise<Membership & { tier: MembershipTier }> {
+    const membership = await this.getUserMembership(userId);
+
+    if (!forceSync && membership.sync_expires_at) {
+      const expiresAt = new Date(membership.sync_expires_at);
+      if (expiresAt > new Date()) {
+        return membership;
+      }
+    }
+
+    const { data: profile } = await supabaseAdmin
+      .from('user_profiles')
+      .select('stripe_customer_id')
+      .eq('id', userId)
+      .single();
+
+    if (!profile?.stripe_customer_id) {
+      await this.updateMembership(userId, {
+        last_synced_at: new Date().toISOString(),
+        sync_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      });
+      return this.getUserMembership(userId);
+    }
+
+    try {
+      const latestSubscription = await stripeService.getLatestActiveSubscription(
+        profile.stripe_customer_id
+      );
+
+      if (latestSubscription) {
+        await stripeService.syncSubscriptionToDatabase(userId, latestSubscription);
+      } else {
+        const freeTier = await this.getTierByName('free');
+        if (membership.tier_id !== freeTier.id) {
+          await this.downgradeToFree(userId, 'No active Stripe subscription');
+        } else {
+          await this.updateMembership(userId, {
+            last_synced_at: new Date().toISOString(),
+            sync_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          });
+        }
+      }
+
+      return this.getUserMembership(userId);
+    } catch (error) {
+      logger.logError('STRIPE', 'Error syncing from Stripe', error);
+      await this.updateMembership(userId, {
+        last_synced_at: new Date().toISOString(),
+        sync_expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+      });
+      throw new ApiError(500, 'Failed to sync subscription from Stripe');
+    }
+  }
+
+  /**
+   * Downgrades a user to the Free tier.
+   */
+  async downgradeToFree(userId: string, reason?: string): Promise<void> {
+    const freeTier = await this.getTierByName('free');
+
+    if (reason) {
+      logger.info('MEMBERSHIP', 'Downgrading user to Free tier', { userId, reason });
+    }
+
+    const { error } = await supabaseAdmin
+      .from('memberships')
+      .update({
+        tier_id: freeTier.id,
+        status: 'active',
+        stripe_subscription_id: null,
+        stripe_price_id: null,
+        stripe_status: null,
+        stripe_current_period_end: null,
+        cancel_at_period_end: false,
+        billing_cycle: null,
+        last_synced_at: new Date().toISOString(),
+        sync_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      })
+      .eq('user_id', userId);
+
+    if (error) {
+      logger.error('MEMBERSHIP', 'Error downgrading to Free tier', {
+        error: error.message,
+        userId,
+      });
+      throw new ApiError(500, 'Failed to downgrade to Free tier');
+    }
   }
 }
 

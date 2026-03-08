@@ -1,26 +1,15 @@
-import { Router, Request, Response } from 'express';
-import { z } from 'zod';
-import { contactService } from '../services/contact.service.js';
-import { asyncHandler } from '../middleware/error.middleware.js';
-import { contactFormRateLimit } from '../middleware/rateLimit.middleware.js';
-
-const router = Router();
-
-// Validation schema
-const contactSubmissionSchema = z.object({
-  first_name: z.string().min(1, 'First name is required').max(50),
-  last_name: z.string().min(1, 'Last name is required').max(50),
-  email: z.string().email('Invalid email address'),
-  subject: z.string().min(1, 'Subject is required').max(200),
-  message: z.string().min(10, 'Message must be at least 10 characters').max(5000),
-});
+/**
+ * @swagger
+ * tags:
+ *   name: Contact
+ *   description: Contact form submission (public, rate-limited)
+ */
 
 /**
  * @swagger
  * /api/contact:
  *   post:
- *     summary: Submit contact form
- *     description: Public endpoint to submit a contact form. Rate limited to 5 requests per 15 minutes per IP.
+ *     summary: Submit a contact form message
  *     tags: [Contact]
  *     security: []
  *     requestBody:
@@ -29,49 +18,51 @@ const contactSubmissionSchema = z.object({
  *         application/json:
  *           schema:
  *             type: object
- *             required: [first_name, last_name, email, subject, message]
+ *             required: [name, email, message]
  *             properties:
- *               first_name:
+ *               name:
  *                 type: string
- *                 maxLength: 50
- *               last_name:
- *                 type: string
- *                 maxLength: 50
+ *                 example: Jane Smith
  *               email:
  *                 type: string
  *                 format: email
+ *                 example: jane@example.com
  *               subject:
  *                 type: string
- *                 maxLength: 200
+ *                 example: Question about pricing
  *               message:
  *                 type: string
- *                 minLength: 10
- *                 maxLength: 5000
+ *                 example: I'd like to learn more about the Pro plan.
  *     responses:
  *       200:
- *         description: Contact form submitted successfully
+ *         description: Message received
  *       400:
  *         description: Validation error
  *       429:
  *         description: Rate limit exceeded
- *       500:
- *         description: Server error
+ */
+
+import { Router, Request, Response } from 'express';
+import { contactService } from '../services/contact.service.js';
+import { asyncHandler } from '../middleware/error.middleware.js';
+import { contactFormRateLimit } from '../middleware/rateLimit.middleware.js';
+import { contactSubmissionSchema } from '../validation/index.js';
+
+const router = Router();
+
+/**
+ * POST / - Submit contact form
+ * Public, rate limited.
  */
 router.post(
   '/',
   contactFormRateLimit,
   asyncHandler(async (req: Request, res: Response) => {
     const input = contactSubmissionSchema.parse(req.body);
-
     const ipAddress = req.ip || req.socket.remoteAddress;
     const userAgent = req.get('User-Agent');
 
-    const submission = await contactService.createSubmission(input, ipAddress, userAgent);
-
-    // Send notification email asynchronously
-    contactService.sendNotificationEmail(submission).catch((err) => {
-      console.error('Failed to send contact notification email:', err);
-    });
+    await contactService.createSubmission(input, ipAddress, userAgent);
 
     res.json({
       success: true,

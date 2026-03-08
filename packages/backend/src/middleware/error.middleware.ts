@@ -1,13 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
-import { env } from '../config/env.js';
+import { logger } from '../utils/logger.js';
 
-// Custom error class for API errors
+/** Custom API error with HTTP status code */
 export class ApiError extends Error {
   constructor(
     public statusCode: number,
     message: string,
-    public details?: unknown
+    public details?: Record<string, unknown>
   ) {
     super(message);
     this.name = 'ApiError';
@@ -15,21 +15,24 @@ export class ApiError extends Error {
 }
 
 /**
- * Global error handler middleware
+ * Wraps async route handlers to catch errors and pass to errorHandler.
+ * Generic Req parameter allows typed request extensions.
  */
-export function errorHandler(
-  err: Error,
-  _req: Request,
-  res: Response,
-  _next: NextFunction
-): void {
-  console.error('Error:', err);
+export function asyncHandler<Req extends Request = Request>(
+  fn: (req: Req, res: Response, next: NextFunction) => Promise<void>
+) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    Promise.resolve(fn(req as Req, res, next)).catch(next);
+  };
+}
 
-  // Handle Zod validation errors
+/** Global error handler — must be registered last */
+export function errorHandler(err: Error, _req: Request, res: Response, _next: NextFunction): void {
+  // Zod validation errors → 400
   if (err instanceof ZodError) {
     res.status(400).json({
       success: false,
-      error: 'Validation error',
+      error: 'Validation failed',
       details: err.errors.map((e) => ({
         field: e.path.join('.'),
         message: e.message,
@@ -38,43 +41,28 @@ export function errorHandler(
     return;
   }
 
-  // Handle custom API errors
+  // Known API errors → custom status
   if (err instanceof ApiError) {
-    const response: { success: boolean; error: string; details?: unknown } = {
+    res.status(err.statusCode).json({
       success: false,
       error: err.message,
-    };
-    if (err.details && env.NODE_ENV !== 'production') {
-      response.details = err.details;
-    }
-    res.status(err.statusCode).json(response);
+      ...(err.details && { details: err.details }),
+    });
     return;
   }
 
-  // Handle other errors
+  // Unknown errors → 500
+  logger.logError('SYSTEM', 'Unhandled error', err);
   res.status(500).json({
     success: false,
-    error: env.NODE_ENV === 'production' ? 'Internal server error' : err.message,
+    error: 'Internal server error',
   });
 }
 
-/**
- * 404 handler for unknown routes
- */
-export function notFoundHandler(req: Request, res: Response): void {
+/** 404 handler for unmatched routes */
+export function notFoundHandler(_req: Request, res: Response): void {
   res.status(404).json({
     success: false,
-    error: `Route ${req.method} ${req.path} not found`,
+    error: 'Route not found',
   });
-}
-
-/**
- * Async handler wrapper to catch errors in async route handlers
- */
-export function asyncHandler<T>(
-  fn: (req: Request, res: Response, next: NextFunction) => Promise<T>
-) {
-  return (req: Request, res: Response, next: NextFunction): void => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
 }

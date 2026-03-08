@@ -1,5 +1,6 @@
 import type { Route } from './+types/auth.login';
 import { useState, type FormEvent } from 'react';
+import { motion } from 'framer-motion';
 import {
   Box,
   Container,
@@ -18,10 +19,13 @@ import { useNavigate, useSearchParams } from 'react-router';
 import { RouterLink } from '~/utils';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import { useAuth } from '~/contexts';
+import { pageTitle } from '~/utils/meta';
+import { branding } from '@config/branding';
+import { GRADIENTS } from '~/theme/index.js';
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: 'Login - SaaS Boilerplate' },
+    { title: pageTitle('Login') },
     { name: 'description', content: 'Sign in to your account' },
   ];
 }
@@ -61,108 +65,122 @@ export default function LoginPage() {
         minHeight: '100vh',
         display: 'flex',
         alignItems: 'center',
-        bgcolor: 'grey.50',
+        background: GRADIENTS.hero,
         py: 8,
       }}
     >
       <Container maxWidth="sm">
-        <Box sx={{ textAlign: 'center', mb: 4 }}>
-          <Box
-            component={RouterLink}
-            to="/"
-            sx={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 1,
-              textDecoration: 'none',
-              color: 'inherit',
-              mb: 2,
-            }}
-          >
-            <RocketLaunchIcon color="primary" sx={{ fontSize: 40 }} />
-            <Typography variant="h4" sx={{ fontWeight: 700, color: 'primary.main' }}>
-              SaaS
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <Box sx={{ textAlign: 'center', mb: 4 }}>
+            <motion.div whileHover={{ scale: 1.05 }} style={{ display: 'inline-block' }}>
+              <Box
+                component={RouterLink}
+                to="/"
+                sx={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  textDecoration: 'none',
+                  color: 'inherit',
+                  mb: 2,
+                }}
+              >
+                <RocketLaunchIcon color="primary" sx={{ fontSize: 40 }} />
+                <Typography variant="h4" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                  {branding.logoText}
+                </Typography>
+              </Box>
+            </motion.div>
+            <Typography variant="h5" gutterBottom>
+              Welcome back
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Sign in to your account to continue
             </Typography>
           </Box>
-          <Typography variant="h5" gutterBottom>
-            Welcome back
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Sign in to your account to continue
-          </Typography>
-        </Box>
 
-        <Card>
-          <CardContent sx={{ p: 4 }}>
-            {error && (
-              <Alert severity="error" sx={{ mb: 3 }}>
-                {error}
-              </Alert>
-            )}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <Card>
+              <CardContent sx={{ p: 4 }}>
+                {error && (
+                  <Alert severity="error" sx={{ mb: 3 }}>
+                    {error}
+                  </Alert>
+                )}
 
-            <Box component="form" onSubmit={handleSubmit}>
-              <Stack spacing={3}>
-                <TextField
-                  label="Email"
-                  type="email"
-                  fullWidth
-                  required
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={loading}
-                />
-                <TextField
-                  label="Password"
-                  type="password"
-                  fullWidth
-                  required
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={loading}
-                />
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <Box component="form" onSubmit={handleSubmit}>
+                  <Stack spacing={3}>
+                    <TextField
+                      label="Email"
+                      type="email"
+                      fullWidth
+                      required
+                      autoComplete="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      disabled={loading}
+                    />
+                    <TextField
+                      label="Password"
+                      type="password"
+                      fullWidth
+                      required
+                      autoComplete="current-password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      disabled={loading}
+                    />
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                      <MuiLink
+                        component={RouterLink}
+                        to="/auth/forgot-password"
+                        variant="body2"
+                        sx={{ textDecoration: 'none' }}
+                      >
+                        Forgot password?
+                      </MuiLink>
+                    </Box>
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      size="large"
+                      fullWidth
+                      disabled={loading}
+                      startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
+                    >
+                      {loading ? 'Signing in...' : 'Sign In'}
+                    </Button>
+                  </Stack>
+                </Box>
+
+                <Divider sx={{ my: 3 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    or
+                  </Typography>
+                </Divider>
+
+                <Typography variant="body2" textAlign="center">
+                  Don't have an account?{' '}
                   <MuiLink
                     component={RouterLink}
-                    to="/auth/forgot-password"
-                    variant="body2"
-                    sx={{ textDecoration: 'none' }}
+                    to="/auth/register"
+                    sx={{ textDecoration: 'none', fontWeight: 500 }}
                   >
-                    Forgot password?
+                    Sign up
                   </MuiLink>
-                </Box>
-                <Button
-                  type="submit"
-                  variant="contained"
-                  size="large"
-                  fullWidth
-                  disabled={loading}
-                  startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
-                >
-                  {loading ? 'Signing in...' : 'Sign In'}
-                </Button>
-              </Stack>
-            </Box>
-
-            <Divider sx={{ my: 3 }}>
-              <Typography variant="body2" color="text.secondary">
-                or
-              </Typography>
-            </Divider>
-
-            <Typography variant="body2" textAlign="center">
-              Don't have an account?{' '}
-              <MuiLink
-                component={RouterLink}
-                to="/auth/register"
-                sx={{ textDecoration: 'none', fontWeight: 500 }}
-              >
-                Sign up
-              </MuiLink>
-            </Typography>
-          </CardContent>
-        </Card>
+                </Typography>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </motion.div>
       </Container>
     </Box>
   );

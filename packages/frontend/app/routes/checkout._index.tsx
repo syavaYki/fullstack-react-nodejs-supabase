@@ -29,10 +29,11 @@ import {
   type TierWithFeatures,
 } from '~/api/membership.api';
 import { formatFeatureDisplay } from '~/utils';
+import { pageTitle } from '~/utils/meta';
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: 'Checkout - SaaS Boilerplate' },
+    { title: pageTitle('Checkout') },
     { name: 'description', content: 'Complete your purchase' },
   ];
 }

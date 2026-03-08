@@ -14,9 +14,10 @@ import {
   TableHead,
   TableRow,
 } from '@mui/material';
+import { pageTitle } from '~/utils/meta';
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: 'Usage - SaaS Boilerplate' }];
+  return [{ title: pageTitle('Usage') }];
 }
 
 const usageData = [

@@ -33,9 +33,10 @@ import {
   getPaymentStatusColor,
   getPaymentStatusLabel,
 } from '~/utils';
+import { pageTitle } from '~/utils/meta';
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: 'Billing - SaaS Boilerplate' }];
+  return [{ title: pageTitle('Billing') }];
 }
 
 export default function BillingPage() {

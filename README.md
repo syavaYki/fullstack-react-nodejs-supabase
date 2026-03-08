@@ -1,274 +1,312 @@
 # Fullstack React + Node.js + Supabase
 
-A monorepo containing a Node.js Express backend with Supabase authentication, memberships, feature flags, and Stripe billing.
+A production-ready SaaS starter template with authentication, tiered memberships, feature flags, usage tracking, and Stripe billing — all wired up and ready to customize.
+
+**Stack:** Express.js backend, React Router v7 frontend (SSR), Supabase (PostgreSQL + Auth), Stripe, MUI v6, TypeScript, npm workspaces monorepo.
+
+## What's Included
+
+- **Authentication** — Cookie-based sessions via `@supabase/ssr`, OAuth support, password reset
+- **Membership tiers** — Free / Premium / Pro with 14-day trial system
+- **Feature flags** — Boolean, limit, and enum feature types per tier
+- **Usage tracking** — Daily, monthly, and lifetime usage enforcement
+- **Stripe billing** — Checkout, customer portal, webhooks, payment history
+- **API layer** — Typed Express routes with Zod validation and Swagger docs
+- **Frontend** — SSR landing page, dashboard shell, auth flows, upgrade dialogs
 
 ## Project Structure
 
-```text
-fullstack-react-nodejs-supabase/
+```
 ├── packages/
-│   └── backend/          # Express API server
-│       ├── src/
-│       │   ├── config/   # Environment, Supabase, Stripe, Swagger
-│       │   ├── middleware/
-│       │   ├── routes/
-│       │   ├── services/
-│       │   └── types/
-│       └── package.json
+│   ├── backend/           # Express API server
+│   │   └── src/
+│   │       ├── config/        # Env validation, Supabase, Stripe, Swagger
+│   │       ├── middleware/    # Auth, membership, usage, rate limiting
+│   │       ├── routes/        # API route handlers
+│   │       ├── services/      # Business logic
+│   │       ├── types/         # TypeScript types (split by domain)
+│   │       ├── validation/    # Zod schemas
+│   │       ├── constants/     # Feature maps, cache TTLs
+│   │       ├── utils/         # Logger, response helpers, pagination
+│   │       └── __tests__/     # Vitest tests + mock factories
+│   └── frontend/          # React Router v7 (SSR)
+│       └── app/
+│           ├── routes/        # Page routes with SSR loaders
+│           ├── api/           # Typed API client
+│           ├── components/    # Landing, dashboard, dialogs
+│           ├── contexts/      # Auth context
+│           ├── theme/         # MUI v6 theme
+│           └── types/         # Frontend types
 ├── supabase/
-│   └── migrations/       # SQL migration files
-├── package.json          # Root workspace config
-└── .env.example
+│   └── migrations/        # SQL files (000–005), run in order
+├── package.json           # Root workspace config
+└── .env.example           # All required env vars
 ```
 
-## Quick Start
+---
 
-### 1. Prerequisites
+## Getting Started
 
-- Node.js 18+
-- Supabase account
-- Stripe account (for billing features)
+### Prerequisites
 
-### 2. Setup Supabase
+- **Node.js 18+**
+- **Supabase account** — [supabase.com](https://supabase.com) (free tier works)
+- **Stripe account** — [stripe.com](https://stripe.com) (test mode)
 
-1. Create a new Supabase project at [supabase.com](https://supabase.com)
-2. Go to **SQL Editor** in your Supabase dashboard
-3. Copy the contents of `supabase/migrations/001_initial_schema.sql`
-4. Paste and run the SQL to create all tables, triggers, and RLS policies
-
-### 3. Configure Environment
+### Step 1: Clone and Install
 
 ```bash
-# Copy environment template
-cp .env.example .env
+# Clone the template
+git clone https://github.com/your-username/fullstack-react-nodejs-supabase.git my-saas-app
+cd my-saas-app
 
-# Edit .env with your credentials
-```
+# Remove the template's git history and start fresh
+rm -rf .git
+git init
 
-Required environment variables:
-
-| Variable | Description |
-|----------|-------------|
-| `SUPABASE_URL` | Your Supabase project URL |
-| `SUPABASE_ANON_KEY` | Supabase anon/public key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (keep secret!) |
-| `JWT_SECRET` | From Supabase Dashboard > Settings > API |
-| `STRIPE_SECRET_KEY` | Stripe secret key (sk_test_...) |
-| `STRIPE_PUBLISHABLE_KEY` | Stripe publishable key (pk_test_...) |
-| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
-
-### 4. Setup Stripe Products
-
-1. Go to [Stripe Dashboard](https://dashboard.stripe.com)
-2. Create products for Pro and Enterprise tiers
-3. Create monthly and yearly prices for each
-4. Update `membership_tiers` table with Stripe price IDs:
-
-```sql
-UPDATE membership_tiers
-SET
-  stripe_price_id_monthly = 'price_xxx',
-  stripe_price_id_yearly = 'price_yyy'
-WHERE name = 'pro';
-```
-
-### 5. Install & Run
-
-```bash
 # Install dependencies
 npm install
-
-# Run development server
-npm run dev:backend
 ```
 
-Server starts at `http://localhost:3001`
+### Step 2: Set Up Supabase
 
-## API Documentation
+1. **Create a project** at [supabase.com/dashboard](https://supabase.com/dashboard)
+2. **Get your credentials** — go to **Project Settings > API**:
+   - Project URL → `SUPABASE_URL`
+   - `anon` public key → `SUPABASE_ANON_KEY`
+   - `service_role` secret key → `SUPABASE_SERVICE_ROLE_KEY`
+3. **Run the migrations** — go to **SQL Editor** in the Supabase dashboard and run each file in order:
 
-Swagger UI available at: `http://localhost:3001/api/docs`
+   | Order | File                         | What it creates                                                                                |
+   | ----- | ---------------------------- | ---------------------------------------------------------------------------------------------- |
+   | 1     | `000_cleanup_all.sql`        | Drops existing objects (safe for fresh projects)                                               |
+   | 2     | `001_schema.sql`             | Tables: profiles, tiers, memberships, features, usage, etc.                                    |
+   | 3     | `002_functions_triggers.sql` | DB functions: `change_user_tier`, `check_reset_and_increment_usage`, `handle_new_user` trigger |
+   | 4     | `003_rls_policies.sql`       | Row Level Security policies for all tables                                                     |
+   | 5     | `004_views.sql`              | Useful database views                                                                          |
+   | 6     | `005_seed_data.sql`          | Default tiers (Free, Premium, Pro), features, and tier-feature mappings                        |
 
-### Endpoints
+   > **Tip:** You can also use the Supabase CLI: `supabase db push` if you have it set up.
 
-#### Authentication (`/api/auth`)
+4. **Configure Auth redirect URLs** — go to **Authentication > URL Configuration > Redirect URLs** and add:
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/me` | Get current user (cookie or Bearer token) |
-| GET | `/callback` | OAuth callback handler (sets session cookies) |
-| POST | `/refresh` | Refresh access token |
-| POST | `/forgot-password` | Send reset email |
-| POST | `/reset-password` | Reset password |
-| POST | `/register` | Register new user *(deprecated - use Supabase client)* |
-| POST | `/login` | Login *(deprecated - use Supabase client)* |
-| POST | `/logout` | Logout *(deprecated - use Supabase client)* |
+   ```
+   http://localhost:5173
+   http://localhost:3001/api/auth/callback
+   ```
 
-> **Cookie-Based Auth**: For browser clients, use the Supabase client directly for login/logout.
-> The backend reads cookies and auto-refreshes tokens. See [Authentication Architecture](#authentication-architecture) below.
+   For production, add your deployed URLs too.
 
-#### Profile (`/api/profile`)
+5. **(Optional) Enable OAuth providers** — go to **Authentication > Providers** and enable Google, GitHub, etc. Each provider needs its own client ID/secret from the provider's developer console.
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/` | Get profile |
-| PUT | `/` | Update profile |
-| DELETE | `/` | Delete account |
+### Step 3: Set Up Stripe
 
-#### Membership (`/api/membership`)
+1. **Get your API keys** from [Stripe Dashboard > Developers > API keys](https://dashboard.stripe.com/test/apikeys):
+   - Secret key → `STRIPE_SECRET_KEY`
+   - Publishable key → used in frontend if needed
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/` | Get current membership |
-| GET | `/tiers` | List available tiers |
-| GET | `/features` | Get user's features |
-| GET | `/check-feature/:key` | Check if user has feature |
-| GET | `/feature-limit/:key` | Get feature limit |
-| GET | `/trial/status` | Get trial status |
-| POST | `/trial/start` | Start 14-day trial |
-| POST | `/trial/convert` | Convert trial to paid |
-| GET | `/usage` | Get all usage for user |
-| GET | `/usage/:key` | Get usage for specific feature |
+2. **Create products and prices** in Stripe Dashboard > Products:
+   - Create a **Premium** product with monthly (`$29/mo`) and yearly prices
+   - Create a **Pro** product with monthly (`$79/mo`) and yearly prices
 
-#### Billing (`/api/billing`)
+3. **Update the seed data** — after running migrations, update the `membership_tiers` table with your Stripe price IDs:
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/create-checkout-session` | Start Stripe checkout |
-| POST | `/create-portal-session` | Open customer portal |
-| GET | `/payment-history` | Get payment history |
-| POST | `/webhook` | Stripe webhook |
+   ```sql
+   UPDATE membership_tiers
+   SET stripe_price_id_monthly = 'price_xxx', stripe_price_id_yearly = 'price_yyy'
+   WHERE name = 'Premium';
 
-#### Admin (`/api/admin`) - Requires admin role
+   UPDATE membership_tiers
+   SET stripe_price_id_monthly = 'price_aaa', stripe_price_id_yearly = 'price_bbb'
+   WHERE name = 'Pro';
+   ```
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/tiers` | List all tiers (including inactive) |
-| POST | `/tiers` | Create new tier |
-| PUT | `/tiers/:id` | Update tier |
-| DELETE | `/tiers/:id` | Deactivate tier |
-| GET | `/tiers/:id/features` | Get tier features |
-| PUT | `/tiers/:id/features` | Update tier features (bulk) |
-| GET | `/features` | List all features |
-| POST | `/features` | Create feature |
-| PUT | `/features/:id` | Update feature |
-| DELETE | `/features/:id` | Deactivate feature |
-| POST | `/trials/expire` | Expire ended trials (cron) |
-| POST | `/usage/reset` | Reset periodic usage (cron) |
-| GET | `/users/:id/usage` | Get user's usage |
-| GET | `/admins` | List admins (super_admin only) |
-| POST | `/admins` | Add admin (super_admin only) |
-| DELETE | `/admins/:id` | Remove admin (super_admin only) |
+4. **Set up webhook forwarding** for local development:
 
-## Membership Tiers
+   ```bash
+   # Install Stripe CLI: https://stripe.com/docs/stripe-cli
+   stripe listen --forward-to localhost:3001/api/billing/webhook
+   ```
 
-| Tier | Price | Features |
-|------|-------|----------|
-| Trial | $0 (14 days) | Full Pro features for evaluation |
-| Free | $0 | Basic features, 500MB storage, no AI |
-| Premium | $29/mo | AI Assistant, 5 team members, 5GB storage |
-| Pro | $79/mo | Unlimited team, 50GB storage, all integrations |
+   Copy the webhook signing secret it prints → `STRIPE_WEBHOOK_SECRET`
 
-## Database Schema
+   For production, create a webhook endpoint in Stripe Dashboard pointing to `https://your-backend.com/api/billing/webhook`.
 
-### Tables
-
-- `user_profiles` - User profile data (with stripe_customer_id)
-- `membership_tiers` - Tier definitions (Trial, Free, Premium, Pro)
-- `memberships` - User subscriptions with trial tracking
-- `features` - Feature definitions (5 SaaS features)
-- `tier_features` - Feature flags per tier (join table)
-- `payment_history` - Payment records
-- `stripe_webhook_events` - Webhook logs
-- `membership_audit_log` - Membership change history
-- `usage_tracking` - Feature usage enforcement
-- `admin_users` - Admin role management
-
-### Helper Functions
-
-```sql
--- Get user's tier with all features
-SELECT * FROM get_user_tier_with_features('user-uuid');
-
--- Check if user has a feature
-SELECT user_has_feature('user-uuid', 'advanced_analytics');
-
--- Get numeric limit
-SELECT get_feature_limit('user-uuid', 'max_projects');
-```
-
-## Testing with Stripe
-
-1. Use Stripe test mode keys
-2. Test card: `4242 4242 4242 4242`
-3. Use [Stripe CLI](https://stripe.com/docs/stripe-cli) to forward webhooks:
+### Step 4: Configure Environment
 
 ```bash
-stripe listen --forward-to localhost:3001/api/billing/webhook
+cp .env.example .env
 ```
 
-## Scripts
+Fill in your `.env`:
+
+```env
+# Server
+PORT=3001
+NODE_ENV=development
+LOG_LEVEL=debug
+
+# URLs
+FRONTEND_URL=http://localhost:5173
+BACKEND_URL=http://localhost:3001
+
+# Supabase (from Step 2)
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=eyJ...
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
+
+# Stripe (from Step 3)
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+# Frontend (Vite)
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJ...
+VITE_BACKEND_URL=http://localhost:3001
+```
+
+### Step 5: Run
 
 ```bash
-npm run dev:backend    # Start dev server with hot reload
-npm run build:backend  # Build for production
-npm run start:backend  # Start production server
+# Start both backend and frontend
+npm run dev
+
+# Or run separately
+npm run dev:backend     # Backend on http://localhost:3001
+npm run dev:frontend    # Frontend on http://localhost:5173
 ```
+
+API docs available at `http://localhost:3001/api-docs` (development only).
+
+---
+
+## Customizing Your App
+
+### Branding & appearance
+
+Edit **`config/branding.ts`** — the single source of truth for your app's name, colors, fonts, and landing page copy. Both the backend and frontend read from this file.
+
+After editing, restart the dev servers to see changes.
+
+| Token                                                               | Controls                                   |
+| ------------------------------------------------------------------- | ------------------------------------------ |
+| `projectDisplayName`                                                | Browser tabs, API docs, home page title    |
+| `primaryColor` / `secondaryColor`                                   | MUI theme colors (buttons, links, accents) |
+| `fontFamily` / `googleFontsUrl`                                     | Typography across the app                  |
+| `logoText`                                                          | Header, sidebar, mobile drawer, auth pages |
+| `footerBrandName` / `footerDescription`                             | Footer branding                            |
+| `metaTitleSuffix`                                                   | All page titles: "Page - {suffix}"         |
+| `heroHeadline` / `heroHeadlineAccent` / `heroSubheadline`           | Landing hero section                       |
+| `ctaText` / `ctaSecondaryText`                                      | Hero CTA buttons                           |
+| `ctaSectionHeadline` / `ctaSectionSubtext` / `ctaSectionButtonText` | Landing CTA section                        |
+| `apiTitle` / `apiDescription`                                       | Swagger UI docs                            |
+
+### Tiers, prices & features
+
+Edit `supabase/migrations/005_seed_data.sql` before running migrations, or update directly in Supabase after setup. Tier names, prices, and descriptions are fetched via API at runtime — they are not in the branding config.
+
+The feature system supports three types:
+
+| Type      | Example              | How it works                                        |
+| --------- | -------------------- | --------------------------------------------------- |
+| `boolean` | `advanced_analytics` | On/off per tier                                     |
+| `limit`   | `max_projects`       | Numeric limit, enforced by usage tracking           |
+| `enum`    | `support_level`      | Text value per tier (e.g., "community", "priority") |
+
+### Environment variables
+
+Environment variables are **optional for exploration**. The server starts without them and prints a warning showing which services are unconfigured. Features requiring Supabase or Stripe will fail at request time with descriptive errors — but you can still browse the landing page and explore the codebase.
+
+Copy `.env.example` to `.env` and fill in values when you're ready to connect services.
+
+### Add new API routes
+
+Follow the existing pattern: create a route file in `routes/`, a service in `services/`, validation schemas in `validation/`, and types in `types/`. Routes are thin — all logic goes in services.
+
+---
+
+## Available Scripts
+
+```bash
+# Development
+npm run dev                  # Start backend + frontend
+npm run dev:backend          # Backend only (port 3001)
+npm run dev:frontend         # Frontend only (port 5173)
+
+# Build
+npm run build:backend        # Build backend
+npm run build:frontend       # Build frontend
+
+# Production
+npm run start:backend        # Start production backend
+npm run start:frontend       # Start production frontend
+
+# Quality
+npm run typecheck            # Type check both packages
+npm run lint                 # Lint both packages
+npm run lint:fix             # Lint and auto-fix
+npm run format               # Format with Prettier
+
+# Tests
+npm run test:backend         # Run backend tests
+npm run test:backend:watch   # Watch mode
+npm run test:backend:coverage # With coverage report
+```
+
+## API Endpoints
+
+| Route                                            | Description            | Auth              |
+| ------------------------------------------------ | ---------------------- | ----------------- |
+| `GET /api/health`                                | Health check           | No                |
+| `POST /api/auth/register`                        | Register user          | No                |
+| `POST /api/auth/login`                           | Login                  | No                |
+| `POST /api/auth/logout`                          | Logout                 | Yes               |
+| `GET /api/auth/me`                               | Current user           | Yes               |
+| `POST /api/auth/refresh`                         | Refresh token          | Yes               |
+| `POST /api/auth/forgot-password`                 | Send reset email       | No                |
+| `POST /api/auth/reset-password`                  | Reset password         | No                |
+| `GET /api/profile`                               | Get profile            | Yes               |
+| `PUT /api/profile`                               | Update profile         | Yes               |
+| `GET /api/membership`                            | Current membership     | Yes               |
+| `GET /api/membership/public/tiers-with-features` | Public pricing data    | No                |
+| `GET /api/membership/features`                   | User's features        | Yes               |
+| `GET /api/membership/check-feature/:key`         | Check feature access   | Yes               |
+| `POST /api/membership/trial/start`               | Start 14-day trial     | Yes               |
+| `GET /api/membership/usage`                      | Usage stats            | Yes               |
+| `POST /api/billing/create-checkout-session`      | Start Stripe checkout  | Yes               |
+| `POST /api/billing/create-portal-session`        | Stripe customer portal | Yes               |
+| `GET /api/billing/payment-history`               | Payment history        | Yes               |
+| `POST /api/billing/webhook`                      | Stripe webhook         | No\*              |
+| `POST /api/contact`                              | Contact form           | No (rate-limited) |
+| `POST /api/newsletter/subscribe`                 | Newsletter signup      | No (rate-limited) |
+
+_\*Verified by Stripe signature_
+
+## Auth Architecture
+
+```
+Frontend (creates cookies)          Backend (reads cookies)
+─────────────────────────           ──────────────────────
+Supabase client:                    @supabase/ssr middleware:
+  signIn / signUp / signOut           getUser, auto-refresh tokens
+  → sets cookies in browser           → reads cookies from request
+```
+
+The frontend owns login/logout. The backend reads cookies and auto-refreshes expired tokens. Bearer token auth is also supported for API clients.
 
 ## Tech Stack
 
-- **Runtime**: Node.js 18+
-- **Framework**: Express.js
-- **Language**: TypeScript
-- **Database**: Supabase (PostgreSQL)
-- **Auth**: Supabase Auth + `@supabase/ssr` (cookie-based)
-- **Billing**: Stripe
-- **Validation**: Zod
-- **Docs**: Swagger/OpenAPI
+| Layer      | Technology                              |
+| ---------- | --------------------------------------- |
+| Backend    | Express.js, TypeScript, Node.js 18+     |
+| Frontend   | React 19, React Router v7 (SSR), MUI v6 |
+| Database   | Supabase (PostgreSQL)                   |
+| Auth       | Supabase Auth + `@supabase/ssr`         |
+| Billing    | Stripe (Checkout, Portal, Webhooks)     |
+| Validation | Zod                                     |
+| Testing    | Vitest                                  |
+| API Docs   | Swagger / OpenAPI                       |
 
-## Authentication Architecture
+## License
 
-This project uses **cookie-based authentication** with a clear separation of responsibilities:
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  FRONTEND (creates/deletes cookies)                         │
-│  └─ Uses Supabase client: signIn, signUp, signOut           │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                    Cookie sent automatically
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│  BACKEND (reads/refreshes cookies)                          │
-│  └─ Uses @supabase/ssr: getUser, auto-refresh               │
-└─────────────────────────────────────────────────────────────┘
-```
-
-| Action | Who Handles It |
-|--------|----------------|
-| Create cookie (login/signup) | Frontend via Supabase client |
-| Read cookie | Backend middleware |
-| Refresh expired tokens | Backend (auto, sets new cookie) |
-| Delete cookie (logout) | Frontend via Supabase client |
-
-### OAuth Setup
-
-For OAuth providers (Google, GitHub, etc.), add redirect URLs in Supabase Dashboard:
-
-**Supabase Dashboard > Authentication > URL Configuration > Redirect URLs:**
-
-```
-http://localhost:3000                      # Frontend (dev)
-http://localhost:3001/api/auth/callback    # Backend OAuth callback (dev)
-https://your-frontend.com                  # Frontend (prod)
-https://your-backend.com/api/auth/callback # Backend OAuth callback (prod)
-```
-
-## Common Mistakes to Avoid
-
-| Mistake | Solution |
-|---------|----------|
-| Using Service Role Key in frontend | Never expose - backend only |
-| Using `@supabase/auth-helpers` | Deprecated - use `@supabase/ssr` |
-| Missing `/auth/callback` route | Required for OAuth |
-| Not adding localhost to redirect URLs | Add in Supabase Dashboard |
-| Backend creating login cookies | Frontend creates, backend reads |
+MIT

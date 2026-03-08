@@ -17,10 +17,12 @@ import { RouterLink } from '~/utils';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { resetPassword } from '~/lib/supabase.client';
+import { pageTitle } from '~/utils/meta';
+import { branding } from '@config/branding';
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: 'Forgot Password - SaaS Boilerplate' },
+    { title: pageTitle('Forgot Password') },
     { name: 'description', content: 'Reset your password' },
   ];
 }
@@ -102,7 +104,7 @@ export default function ForgotPasswordPage() {
           >
             <RocketLaunchIcon color="primary" sx={{ fontSize: 40 }} />
             <Typography variant="h4" sx={{ fontWeight: 700, color: 'primary.main' }}>
-              SaaS
+              {branding.logoText}
             </Typography>
           </Box>
           <Typography variant="h5" gutterBottom>

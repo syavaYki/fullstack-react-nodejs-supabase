@@ -1,15 +1,13 @@
 import { Response, NextFunction } from 'express';
 import { supabaseAdmin } from '../config/supabase.js';
 import { AuthenticatedRequest, UserTierWithFeatures } from '../types/index.js';
+import { logger } from '../utils/logger.js';
 
-// Extend request to include membership info
 interface MembershipRequest extends AuthenticatedRequest {
   membership?: UserTierWithFeatures;
 }
 
-/**
- * Middleware to attach membership info to request
- */
+/** Attaches membership info to request via get_user_tier_with_features RPC */
 export async function membershipMiddleware(
   req: MembershipRequest,
   res: Response,
@@ -17,24 +15,17 @@ export async function membershipMiddleware(
 ): Promise<void> {
   try {
     if (!req.user) {
-      res.status(401).json({
-        success: false,
-        error: 'Authentication required',
-      });
+      res.status(401).json({ success: false, error: 'Authentication required' });
       return;
     }
 
-    // Get user's tier with features using the helper function
     const { data, error } = await supabaseAdmin.rpc('get_user_tier_with_features', {
       p_user_id: req.user.id,
     });
 
     if (error) {
-      console.error('Error fetching membership:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to fetch membership information',
-      });
+      logger.error('MEMBERSHIP', 'Error fetching membership', { error: error.message });
+      res.status(500).json({ success: false, error: 'Failed to fetch membership information' });
       return;
     }
 
@@ -44,24 +35,16 @@ export async function membershipMiddleware(
 
     next();
   } catch (error) {
-    console.error('Membership middleware error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to verify membership',
-    });
+    logger.logError('MEMBERSHIP', 'Membership middleware error', error);
+    res.status(500).json({ success: false, error: 'Failed to verify membership' });
   }
 }
 
-/**
- * Middleware factory to require a specific tier or higher
- */
+/** Factory: require user's tier to be in allowedTiers list */
 export function requireTier(...allowedTiers: string[]) {
   return async (req: MembershipRequest, res: Response, next: NextFunction): Promise<void> => {
     if (!req.membership) {
-      res.status(403).json({
-        success: false,
-        error: 'Membership information not available',
-      });
+      res.status(403).json({ success: false, error: 'Membership information not available' });
       return;
     }
 
@@ -73,21 +56,14 @@ export function requireTier(...allowedTiers: string[]) {
       return;
     }
 
-    if (
-      req.membership.membership_status !== 'active' &&
-      req.membership.membership_status !== 'trial'
-    ) {
-      res.status(403).json({
-        success: false,
-        error: 'Your membership is not active',
-      });
+    if (req.membership.membership_status !== 'active') {
+      res.status(403).json({ success: false, error: 'Your membership is not active' });
       return;
     }
 
-    // Check if trial has expired
-    if (req.membership.membership_status === 'trial' && req.membership.trial_ends_at) {
-      const trialEndsAt = new Date(req.membership.trial_ends_at);
-      if (new Date() > trialEndsAt) {
+    // Belt-and-suspenders trial expiry check
+    if (req.membership.stripe_status === 'trialing' && req.membership.trial_ends_at) {
+      if (new Date() > new Date(req.membership.trial_ends_at)) {
         res.status(403).json({
           success: false,
           error: 'Your trial has expired. Please upgrade to continue.',
@@ -100,38 +76,32 @@ export function requireTier(...allowedTiers: string[]) {
   };
 }
 
-/**
- * Middleware factory to require a specific feature
- */
+/** Factory: require a specific feature via user_has_feature RPC */
 export function requireFeature(featureKey: string) {
   return async (req: MembershipRequest, res: Response, next: NextFunction): Promise<void> => {
     if (!req.user) {
-      res.status(401).json({
-        success: false,
-        error: 'Authentication required',
-      });
+      res.status(401).json({ success: false, error: 'Authentication required' });
       return;
     }
 
-    // Check if user has the feature
     const { data, error } = await supabaseAdmin.rpc('user_has_feature', {
       p_user_id: req.user.id,
       p_feature_key: featureKey,
     });
 
     if (error) {
-      console.error('Error checking feature:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to verify feature access',
-      });
+      logger.error('MEMBERSHIP', 'Error checking feature', { error: error.message, featureKey });
+      res.status(500).json({ success: false, error: 'Failed to verify feature access' });
       return;
     }
 
     if (!data) {
       res.status(403).json({
         success: false,
-        error: `This feature requires the "${featureKey}" permission. Please upgrade your plan.`,
+        error: `Feature ${featureKey} not available on your plan`,
+        code: 'FEATURE_NOT_AVAILABLE',
+        feature_key: featureKey,
+        upgrade_url: '/pricing',
       });
       return;
     }

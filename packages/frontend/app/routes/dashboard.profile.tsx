@@ -26,6 +26,7 @@ import * as profileApi from '~/api/profile.api';
 import type { UserProfile, UpdateProfileInput } from '~/types';
 import { getInitials, getDisplayName, formatDate } from '~/utils';
 import { fetchWithCookies, serverFetch } from '~/lib/fetch.server';
+import { pageTitle } from '~/utils/meta';
 
 export async function loader({ request }: Route.LoaderArgs) {
   const profile = await fetchWithCookies<UserProfile>('/api/profile', request);
@@ -54,7 +55,7 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: 'Profile - SaaS Boilerplate' }];
+  return [{ title: pageTitle('Profile') }];
 }
 
 export default function ProfilePage() {

@@ -19,9 +19,10 @@ import LayersIcon from '@mui/icons-material/Layers';
 import ExtensionIcon from '@mui/icons-material/Extension';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import { pageTitle } from '~/utils/meta';
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: 'Admin Dashboard - SaaS Boilerplate' }];
+  return [{ title: pageTitle('Admin Dashboard') }];
 }
 
 export async function loader({ request: _request }: Route.LoaderArgs) {

@@ -23,6 +23,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import * as membershipApi from '~/api/membership.api';
 import type { Membership, MembershipTier, TrialStatus, UserTierWithFeatures } from '~/types';
 import { fetchWithCookies } from '~/lib/fetch.server';
+import { pageTitle } from '~/utils/meta';
 
 export async function loader({ request }: Route.LoaderArgs) {
   const [membership, tiers, trialStatus, features] = await Promise.all([
@@ -45,7 +46,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: 'Membership - SaaS Boilerplate' }];
+  return [{ title: pageTitle('Membership') }];
 }
 
 export default function MembershipPage() {

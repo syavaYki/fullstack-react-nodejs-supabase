@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import { RouterLink } from '~/utils';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
+import { branding } from '@config/branding';
 import HomeIcon from '@mui/icons-material/Home';
 import LogoutIcon from '@mui/icons-material/Logout';
 import type { DashboardSidebarProps } from './types';
@@ -49,7 +50,7 @@ export function DashboardSidebar({
         >
           <RocketLaunchIcon color="primary" />
           <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main' }}>
-            SaaS
+            {branding.logoText}
           </Typography>
         </Box>
       </Toolbar>

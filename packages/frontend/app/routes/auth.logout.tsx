@@ -3,9 +3,10 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { useAuth } from '~/contexts';
+import { pageTitle } from '~/utils/meta';
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: 'Logout - SaaS Boilerplate' }];
+  return [{ title: pageTitle('Logout') }];
 }
 
 export default function LogoutPage() {

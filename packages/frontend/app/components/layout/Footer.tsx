@@ -9,6 +9,7 @@ import {
 } from '@mui/material';
 import { RouterLink } from '~/utils';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
+import { branding } from '@config/branding';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import TwitterIcon from '@mui/icons-material/Twitter';
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
@@ -51,11 +52,11 @@ export function Footer() {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
               <RocketLaunchIcon sx={{ color: 'primary.light' }} />
               <Typography variant="h6" sx={{ color: 'white', fontWeight: 700 }}>
-                SaaS Boilerplate
+                {branding.footerBrandName}
               </Typography>
             </Box>
             <Typography variant="body2" sx={{ mb: 3, maxWidth: 300 }}>
-              A production-ready full-stack template for building modern SaaS applications.
+              {branding.footerDescription}
             </Typography>
             <Stack direction="row" spacing={1}>
               <IconButton
@@ -124,7 +125,7 @@ export function Footer() {
           }}
         >
           <Typography variant="body2" sx={{ color: 'grey.500' }}>
-            &copy; {new Date().getFullYear()} SaaS Boilerplate. All rights reserved.
+            &copy; {new Date().getFullYear()} {branding.footerBrandName}. All rights reserved.
           </Typography>
           <Typography variant="body2" sx={{ color: 'grey.500' }}>
             Built with React, TypeScript, and MUI
